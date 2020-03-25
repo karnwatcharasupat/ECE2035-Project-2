@@ -24,17 +24,17 @@ typedef struct {
      * game state.
      */
     int type;
-    
+
     /**
      * A function pointer to the drawing function for this item. Used by draw_game.
      */
     DrawFunc draw;
-    
+
     /**
      * If zero, this item should block character motion.
      */
     int walkable;
-    
+
     /**
      * Arbitrary extra data for the MapItem. Could be useful for keeping up with
      * special information, like where a set of stairs should take the player.
@@ -48,11 +48,10 @@ typedef struct {
 
 // MapItem types
 // Define more of these!
-#define WALL    0
-#define PLANT   1
+#define WALL 0
+#define PLANT 1
 #define CHARACTERSPRITE 2
 #define CLEAR 3
-
 
 /**
  * Initializes the internal structures for all maps. This does not populate
@@ -90,7 +89,7 @@ void print_map();
 int map_width();
 
 /**
- * Returns the heigh of the active map.
+ * Returns the height of the active map.
  */
 int map_height();
 
@@ -127,8 +126,8 @@ MapItem* get_west(int x, int y);
 MapItem* get_here(int x, int y);
 
 // Directions, for using the modification functions
-#define HORIZONTAL  0
-#define VERTICAL    1
+#define HORIZONTAL 0
+#define VERTICAL 1
 
 /**
  * If there is a MapItem at (x,y), remove it from the map.
@@ -151,8 +150,6 @@ void add_wall(int x, int y, int dir, int len);
  */
 void add_plant(int x, int y);
 
+void add_character(int x, int y, void* player_data);
 
-void add_character(int x, int y, void * player_data);
-
-
-#endif //MAP_H
+#endif  //MAP_H

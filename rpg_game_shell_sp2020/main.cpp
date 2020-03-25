@@ -1,25 +1,25 @@
 // Project includes
 #include "globals.h"
+#include "graphics.h"
 #include "hardware.h"
 #include "map.h"
-#include "graphics.h"
 #include "speech.h"
 
 #include <math.h>
-#include<stdio.h>
+#include <stdio.h>
 
 // Helper function declarations
 void playSound(char* wav);
 
 // Top down camera view
 struct {
-    int x,y;    // Current locations
-    int px, py; // Previous locations
+    int x, y;    // Current locations
+    int px, py;  // Previous locations
 } Camera;
 
 /**
  * Given the game inputs, determine what kind of update needs to happen.
- * Possbile return values are defined below.
+ * Possible return values are defined below.
  */
 #define NO_ACTION 0
 #define ACTION_BUTTON 1
@@ -29,11 +29,60 @@ struct {
 #define GO_UP 5
 #define GO_DOWN 6
 
-int get_action(GameInputs inputs)
-{
+int get_action(GameInputs inputs) {
+    /*
+    struct GameInputs {
+        int b1, b2, b3;     // Button presses
+        double ax, ay, az;  // Accelerometer readings
+    };
+    */
+
+    if (inputs.b1) {
+        return ACTION_BUTTON;
+    } else if (inputs.b2) {
+        return BACK_BUTTON;
+    } else {
+        int action = get_action_from_accel(inputs);
+    }
+
     return NO_ACTION;
 }
 
+/**
+ * Given the game inputs, determine what kind of movement needs to happen
+ */
+#define ACCEL_THRESHOLD 0.0
+int get_action_from_accel(GameInputs inputs) {
+    double x_abs = fabs(inputs.ax);
+    double y_abs = fabs(inputs.ay);
+    int x_dir = (inputs.ax > 0);  // 1 for RIGHT, 0 for LEFT
+    int y_dir = (inputs.ay > 0);  // 1 for DOWN, 0 for UP
+
+    /**
+     * O -----------> x
+     * |
+     * |
+     * |
+     * |
+     * v
+     * y
+     */
+
+    if ((x_abs > ACCEL_THRESHOLD) || (y_abs > ACCEL_THRESHOLD)) {
+        // if either value is greater than the threshold
+        if (x_abs > y_abs) {
+            // if absolute value of ax > ay
+            return x_dir ? GO_RIGHT : GO_LEFT;
+        } else {
+            // if absolute value of ay > ax
+            return y_dir ? GO_DOWN : GO_UP;
+        }
+    } else {
+        return NO_ACTION;
+    }
+
+    return -1;
+}
 
 /**
  * Update the game state based on the user action. For example, if the user
@@ -50,16 +99,17 @@ int get_action(GameInputs inputs)
 
 #define MODE_FREE_ROAM 1
 #define MODE_SELECTED 2
-int update_game(int action)
-{
+int update_game(int action) {
     // Save player previous location before updating
     Camera.px = Camera.x;
     Camera.py = Camera.y;
 
+    int update = -1;
     // Do different things based on the action
     // You can define smaller functions that get called for each case
-    switch(action) {
+    switch (action) {
         case ACTION_BUTTON:
+            update = update_action();
             break;
         case BACK_BUTTON:
             break;
@@ -72,7 +122,7 @@ int update_game(int action)
         case GO_RIGHT:
             break;
         default:
-            break;        
+            break;
     }
     return NO_RESULT;
 }
@@ -83,14 +133,13 @@ int update_game(int action)
  * bars. Unless init is nonzero, this function will optimize drawing by only
  * drawing tiles that have changed from the previous frame.
  */
-void draw_game(int init)
-{
+void draw_game(int init) {
     // Draw game border first
-    if(init) draw_border();
+    if (init) draw_border();
 
     // Iterate over all visible map tiles
-    for (int i = -5; i <= 5; i++) { // Iterate over columns of tiles
-        for (int j = -4; j <= 4; j++) { // Iterate over one column of tiles
+    for (int i = -5; i <= 5; i++) {      // Iterate over columns of tiles
+        for (int j = -4; j <= 4; j++) {  // Iterate over one column of tiles
             // Here, we have a given (i,j)
 
             // Compute the current map (x,y) of this tile
@@ -102,26 +151,25 @@ void draw_game(int init)
             int py = j + Camera.py;
 
             // Compute u,v coordinates for drawing
-            int u = (i+5)*11 + 3;
-            int v = (j+4)*11 + 15;
+            int u = (i + 5) * 11 + 3;
+            int v = (j + 4) * 11 + 15;
 
             // Figure out what to draw
             DrawFunc draw = NULL;
             if (i == 0 && j == 0) {
                 // Decide what to draw at the 0 position
                 draw = draw_selection;
-            } 
-            else if (x >= 0 && y >= 0 && x < map_width() && y < map_height()) { // Current (i,j) in the map
+            } else if (x >= 0 && y >= 0 && x < map_width() && y < map_height()) {  // Current (i,j) in the map
                 MapItem* curr_item = get_here(x, y);
                 MapItem* prev_item = get_here(px, py);
-                if (init || curr_item != prev_item) { // Only draw if they're different
-                    if (curr_item) { // There's something here! Draw it
+                if (init || curr_item != prev_item) {  // Only draw if they're different
+                    if (curr_item) {                   // There's something here! Draw it
                         draw = curr_item->draw;
-                    } else { // There used to be something, but now there isn't
+                    } else {  // There used to be something, but now there isn't
                         draw = draw_nothing;
                     }
                 }
-            } else if (init) { // If doing a full draw, but we're out of bounds, draw the walls.
+            } else if (init) {  // If doing a full draw, but we're out of bounds, draw the walls.
                 draw = draw_wall;
             }
             // Actually draw the tile
@@ -138,25 +186,23 @@ void draw_game(int init)
  * Initialize the main world map. Add walls around the edges, interior chambers,
  * and plants in the background so you can see motion.
  */
-void init_main_map()
-{
+void init_main_map() {
     // "Random" plants
     Map* map = set_active_map(0);
-    for(int i = map_width() + 3; i < map_area(); i += 39) {
+    for (int i = map_width() + 3; i < map_area(); i += 39) {
         add_plant(i % map_width(), i / map_width());
     }
     pc.printf("plants\r\n");
 
     pc.printf("Adding walls!\r\n");
-    add_wall(0,              0,              HORIZONTAL, map_width());
-    add_wall(0,              map_height()-1, HORIZONTAL, map_width());
-    add_wall(0,              0,              VERTICAL,   map_height());
-    add_wall(map_width()-1,  0,              VERTICAL,   map_height());
+    add_wall(0, 0, HORIZONTAL, map_width());
+    add_wall(0, map_height() - 1, HORIZONTAL, map_width());
+    add_wall(0, 0, VERTICAL, map_height());
+    add_wall(map_width() - 1, 0, VERTICAL, map_height());
     pc.printf("Walls done!\r\n");
 
     print_map();
 }
-
 
 /**
  * Program entry point! This is where it all begins.
@@ -164,8 +210,7 @@ void init_main_map()
  * implementation should be elsewhere - this holds the game loop, and should
  * read like a road map for the rest of the code.
  */
-int main()
-{
+int main() {
     // First things first: initialize hardware
     ASSERT_P(hardware_init() == ERROR_NONE, "Hardware init failed!");
 
@@ -173,7 +218,7 @@ int main()
     // Initialize the maps
     maps_init();
     init_main_map();
-    
+
     Camera.x = Camera.px = 3;
     Camera.y = Camera.px = 3;
 
@@ -181,21 +226,30 @@ int main()
 
     // Initialize game state
     set_active_map(0);
+    GameInputs inputs = read_inputs();
+    int action = -1, update = -1;
 
     // Initial drawing
     draw_game(true);
 
     // Main game loop
-    while(1) {
+    while (1) {
         // Timer to measure game update speed
         Timer t;
         t.start();
 
         // 1. Read inputs
+        inputs = read_inputs();
         // 2. Determine action (move, act, menu, etc.)
+        action = get_action(inputs);
         // 3. Update game
+        update = update_game(action);
         // 3b. Check for game over
+        if (update == GAME_OVER) {
+            // call game over routine
+        }
         // 4. Draw screen
+        draw_game((update == FULL_DRAW));
 
         // Compute update time
         t.stop();
@@ -203,4 +257,3 @@ int main()
         if (dt < 100) wait_ms(100 - dt);
     }
 }
-

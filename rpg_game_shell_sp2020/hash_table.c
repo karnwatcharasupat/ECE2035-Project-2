@@ -269,7 +269,7 @@ void destroyHashTable(HashTable* hashTable) {
 
         destroyBucket(hashTable->buckets[i]);
     }
-
+    free(hashTable->buckets);
     free(hashTable);
 }
 
@@ -285,8 +285,6 @@ void destroyHashTable(HashTable* hashTable) {
  * @return old value if it is overwritten, or NULL if not replaced
  */
 void* insertItem(HashTable* hashTable, unsigned int key, void* value) {
-    HashTableEntry* newEntry = createHashTableEntry(key, value);
-
     HashTableEntry* entry = findItem(hashTable, key);
 
     if (entry) {                        // if an entry already exists
@@ -296,7 +294,8 @@ void* insertItem(HashTable* hashTable, unsigned int key, void* value) {
     } else {
         unsigned int bucket = hashTable->hash(key);                  // get the bucket id
         HashTableEntry* bucketEntries = hashTable->buckets[bucket];  // get pointer to the bucket
-        hashTable->buckets[bucket] = newEntry;                       // add the new entry at the start of the bucket
+        HashTableEntry* newEntry = createHashTableEntry(key, value);
+        hashTable->buckets[bucket] = newEntry;  // add the new entry at the start of the bucket
 
         if (bucketEntries) {                 // if the bucket is not empty
             newEntry->next = bucketEntries;  // append the original list to the new head
@@ -351,9 +350,12 @@ void removeEntryFromBucket(HashTable* hashTable, unsigned int key) {
     }
 
     while (thisNode) {
+        // printf("middle remove\n");
         if (thisNode->next->key == key) {
-            thisNode->next = thisNode->next->next;
+            // the next node is to be removed
+            HashTableEntry* tmp = thisNode->next->next;
             free(thisNode->next);
+            thisNode->next = tmp;
             return;
         }
         thisNode = thisNode->next;
