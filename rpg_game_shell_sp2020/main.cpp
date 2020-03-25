@@ -1,12 +1,12 @@
 // Project includes
+#include <math.h>
+#include <stdio.h>
+
 #include "globals.h"
 #include "graphics.h"
 #include "hardware.h"
 #include "map.h"
 #include "speech.h"
-
-#include <math.h>
-#include <stdio.h>
 
 // Helper function declarations
 void playSound(char* wav);
@@ -43,6 +43,7 @@ int get_action(GameInputs inputs) {
         return BACK_BUTTON;
     } else {
         int action = get_action_from_accel(inputs);
+        return action;
     }
 
     return NO_ACTION;
@@ -77,11 +78,9 @@ int get_action_from_accel(GameInputs inputs) {
             // if absolute value of ay > ax
             return y_dir ? GO_DOWN : GO_UP;
         }
-    } else {
-        return NO_ACTION;
     }
 
-    return -1;
+    return NO_ACTION;
 }
 
 /**
@@ -99,7 +98,7 @@ int get_action_from_accel(GameInputs inputs) {
 
 #define MODE_FREE_ROAM 1
 #define MODE_SELECTED 2
-int update_game(int action) {
+int update_game(int action, int mode, int active_player) {
     // Save player previous location before updating
     Camera.px = Camera.x;
     Camera.py = Camera.y;
@@ -109,22 +108,43 @@ int update_game(int action) {
     // You can define smaller functions that get called for each case
     switch (action) {
         case ACTION_BUTTON:
-            update = update_action();
+            if (mode == MODE_FREE_ROAM) {
+                update = check_char_select();
+            } else if (mode == MODE_SELECTED) {
+                update = update_move_character(Camera.px, Camera.py);
+            }
+
+            update = update_action(Camera.px, Camera.py);
             break;
         case BACK_BUTTON:
+            update = update_back();
             break;
         case GO_UP:
+            update = update_loc(GO_UP);
             break;
         case GO_LEFT:
+            update = update_loc(GO_LEFT);
             break;
         case GO_DOWN:
+            update = update_loc(GO_DOWN);
             break;
         case GO_RIGHT:
+            update = update_loc(GO_RIGHT);
             break;
         default:
             break;
     }
     return NO_RESULT;
+}
+
+/**
+ * 
+ *  Select a character if the cursor is on the character
+ */
+int check_char_select(int x, int y, int player_id) {
+    Map* map = get_active_map();
+    MapItem* item = get_current(x, y);
+    if (item->typ)
 }
 
 /**
@@ -210,6 +230,8 @@ void init_main_map() {
  * implementation should be elsewhere - this holds the game loop, and should
  * read like a road map for the rest of the code.
  */
+#define NUM_CHARACTERS 3
+#define NUM_PLAYERS 2
 int main() {
     // First things first: initialize hardware
     ASSERT_P(hardware_init() == ERROR_NONE, "Hardware init failed!");
@@ -223,11 +245,28 @@ int main() {
     Camera.y = Camera.px = 3;
 
     // Initialize Characters
+    Character characters[NUM_PLAYERS][NUM_CHARACTERS];
+    for (int i = 0; i < NUM_PLAYERS; i++) {
+        for (int j = 0; j < NUM_CHARACTERS; j++) {
+            characters[i][j].atk = 10;
+            characters[i][j].def = 20;
+            characters[i][j].rng = 2;
+            characters[i][j].health = 100;
+            characters[i][j].team = i + 1;
+
+            characters[i][j].x = i;
+            characters[i][j].y = j;
+
+            add_character(characters[i][j].x, characters[i][j].y, &characters[i][j]);
+        }
+    }
 
     // Initialize game state
     set_active_map(0);
     GameInputs inputs = read_inputs();
     int action = -1, update = -1;
+    int mode = MODE_FREE_ROAM;
+    int active_player = 1;
 
     // Initial drawing
     draw_game(true);
@@ -243,7 +282,7 @@ int main() {
         // 2. Determine action (move, act, menu, etc.)
         action = get_action(inputs);
         // 3. Update game
-        update = update_game(action);
+        update = update_game(action, mode, active_player);
         // 3b. Check for game over
         if (update == GAME_OVER) {
             // call game over routine

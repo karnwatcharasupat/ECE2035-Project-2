@@ -23,7 +23,7 @@ static int active_map;
  */
 static unsigned XY_KEY(int X, int Y) {
     // int and unsigned are 4 bytes = 32 bits
-    unsigned int key = ((unsigned)X << 16) + Y;
+    unsigned int key = ((unsigned)X << 16) + (unsigned)Y;
     return key;
 }
 
@@ -38,6 +38,11 @@ unsigned map_hash(unsigned key) {
     return key % NUM_BUCKETS;
 }
 
+/**
+ * Initializes the internal structures for all maps. This does not populate
+ * the map with items, but allocates space for them, initializes the hash tables, 
+ * and sets the width and height.
+ */
 void maps_init() {
     // TODO: Implement!
     // Initialize hash table
@@ -50,15 +55,33 @@ void maps_init() {
     }
 }
 
+/**
+ * Returns a pointer to the active map.
+ */
 Map* get_active_map() {
     return &maps[active_map];
 }
 
+/**
+ * Sets the active map to map m, where m is the index of the map to activate.
+ * Returns a pointer to the new active map.
+ */
 Map* set_active_map(int m) {
     active_map = m;
     return &maps[active_map];
 }
 
+/**
+ * Returns the map m, regardless of whether it is the active map. This function
+ * does not change the active map.
+ */
+Map* get_map(int m) {
+    return &maps[m];
+}
+
+/**
+ * Print the active map to the serial console.
+ */
 void print_map() {
     char lookup[] = {'W', 'D', 'P', 'A', 'K', 'C', 'N', ' ', 'S'};
     Map* map = get_active_map();
@@ -85,31 +108,68 @@ int map_height() {
 }
 
 int map_area() {
+    return map_width() * map_height();
 }
 
+/**
+     * O -----------> x
+     * |
+     * |
+     * |
+     * |
+     * v
+     * y
+     */
+
 MapItem* get_current(int x, int y) {
+    MapItem* item = (MapItem*)getItem(map->items, XY_KEY(x, y));
+    return item;
 }
 
 MapItem* get_north(int x, int y) {
+    //TODO: edge case y = 0;
+    MapItem* item = (MapItem*)getItem(map->items, XY_KEY(x, y - 1));
+    return item;
 }
 
 MapItem* get_south(int x, int y) {
+    //TODO: edge case y = y_max;
+    MapItem* item = (MapItem*)getItem(map->items, XY_KEY(x, y + 1));
+    return item;
 }
 
 MapItem* get_east(int x, int y) {
+    //TODO: edge case x = x_max;
+    MapItem* item = (MapItem*)getItem(map->items, XY_KEY(x + 1, y));
+    return item;
 }
 
 MapItem* get_west(int x, int y) {
+    //TODO: edge case x = 0;
+    MapItem* item = (MapItem*)getItem(map->items, XY_KEY(x - 1, y));
+    return item;
 }
 
 MapItem* get_here(int x, int y) {
-    // FIX THIS
-    return NULL;
+    MapItem* item = (MapItem*)getItem(map->items, XY_KEY(x, y));
+    return item;
 }
 
+/**
+ * If there is a MapItem at (x,y), remove it from the map.
+ */
 void map_erase(int x, int y) {
+    removeItem(map->items, XY_KEY(x, y));
 }
 
+/**
+ * Add WALL items in a line of length len beginning at (x,y).
+ * If dir == HORIZONTAL, the line is in the direction of increasing x.
+ * If dir == VERTICAL, the line is in the direction of increasing y.
+ *
+ * If there are already items in the map that collide with this line, they are
+ * erased.
+ */
 void add_wall(int x, int y, int dir, int len) {
     for (int i = 0; i < len; i++) {
         MapItem* w1 = (MapItem*)malloc(sizeof(MapItem));
@@ -123,6 +183,10 @@ void add_wall(int x, int y, int dir, int len) {
     }
 }
 
+/**
+ * Add a PLANT item at (x,y). If there is already a MapItem at (x,y), erase it
+ * before adding the plant.
+ */
 void add_plant(int x, int y) {
     MapItem* w1 = (MapItem*)malloc(sizeof(MapItem));
     w1->type = PLANT;
@@ -134,4 +198,15 @@ void add_plant(int x, int y) {
 }
 
 void add_character(int x, int y, void* player_data) {
+    MapItem* c = (MapItem*)malloc(sizeof(MapItem));
+    w1->type = CHARACTERSPRITE;
+    if (player_data->team == 1) {
+        w1->draw = draw_player1sprite;
+    } else if (player_data->team == 2) {
+        w1->draw = draw_player2sprite;
+    }
+    w1->walkable = false;
+    w1->data = player_data;
+    void* val = insertItem(get_active_map()->items, XY_KEY(x, y), w1);
+    if (val) free(val);  // If something is already there, free it
 }
