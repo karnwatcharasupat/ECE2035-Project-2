@@ -57,17 +57,7 @@ int get_action_from_accel(GameInputs inputs) {
     double x_abs = fabs(inputs.ax);
     double y_abs = fabs(inputs.ay);
     int x_dir = (inputs.ax > 0);  // 1 for RIGHT, 0 for LEFT
-    int y_dir = (inputs.ay > 0);  // 1 for DOWN, 0 for UP
-
-    /**
-     * O -----------> x
-     * |
-     * |
-     * |
-     * |
-     * v
-     * y
-     */
+    int y_dir = (inputs.ay > 0);  // 1 for UP, 0 for DOWN
 
     if ((x_abs > ACCEL_THRESHOLD) || (y_abs > ACCEL_THRESHOLD)) {
         // if either value is greater than the threshold
@@ -76,7 +66,7 @@ int get_action_from_accel(GameInputs inputs) {
             return x_dir ? GO_RIGHT : GO_LEFT;
         } else {
             // if absolute value of ay > ax
-            return y_dir ? GO_DOWN : GO_UP;
+            return y_dir ? GO_UP : GO_DOWN;
         }
     }
 
@@ -98,7 +88,7 @@ int get_action_from_accel(GameInputs inputs) {
 
 #define MODE_FREE_ROAM 1
 #define MODE_SELECTED 2
-int update_game(int action, int mode, int active_player) {
+int update_game(int action, int* mode, int* active_player) {
     // Save player previous location before updating
     Camera.px = Camera.x;
     Camera.py = Camera.y;
@@ -108,13 +98,16 @@ int update_game(int action, int mode, int active_player) {
     // You can define smaller functions that get called for each case
     switch (action) {
         case ACTION_BUTTON:
-            if (mode == MODE_FREE_ROAM) {
-                update = check_char_select();
-            } else if (mode == MODE_SELECTED) {
+            if (*mode == MODE_FREE_ROAM) {
+                int selected = check_char_select(Camera.px, Camera.py, *active_player);
+                if (selected) {
+                    *mode = MODE_SELECTED;
+                }
+                update = NO_RESULT
+            } else if (*mode == MODE_SELECTED) {
                 update = update_move_character(Camera.px, Camera.py);
             }
 
-            update = update_action(Camera.px, Camera.py);
             break;
         case BACK_BUTTON:
             update = update_back();
@@ -138,13 +131,18 @@ int update_game(int action, int mode, int active_player) {
 }
 
 /**
- * 
- *  Select a character if the cursor is on the character
+ *  Return true if the cursor is on the character owned by the current player
  */
 int check_char_select(int x, int y, int player_id) {
     Map* map = get_active_map();
     MapItem* item = get_current(x, y);
-    if (item->typ)
+    if (item->type == CHARACTERSPRITE) {
+        if (item->data->team == player_id) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 /**
@@ -282,7 +280,7 @@ int main() {
         // 2. Determine action (move, act, menu, etc.)
         action = get_action(inputs);
         // 3. Update game
-        update = update_game(action, mode, active_player);
+        update = update_game(action, &mode, &active_player);
         // 3b. Check for game over
         if (update == GAME_OVER) {
             // call game over routine

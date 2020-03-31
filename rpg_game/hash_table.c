@@ -237,9 +237,14 @@ void destroyBucket(HashTableEntry* bucket) {
 
     HashTableEntry* thisNode = bucket;
     HashTableEntry* nextNode;
+    void* value;
 
     while (thisNode) {  // while this node is not NULL
         nextNode = thisNode->next;
+        value = thisNode->value;
+        if (value) {
+            free(thisNode->value);
+        }
         free(thisNode);  // free the memory for this node
         thisNode = nextNode;
     }
@@ -343,17 +348,29 @@ void removeEntryFromBucket(HashTable* hashTable, unsigned int key) {
         return;
     }
 
+    void* value;
+
+    // if the wanted node is the first node
     if (thisNode->key == key) {
         hashTable->buckets[bucket] = thisNode->next;
+        value = thisNode->value;
+        if (value) {
+            free(value);
+        }
         free(thisNode);
         return;
     }
 
+    // if the wanted node is not the first node
     while (thisNode) {
         // printf("middle remove\n");
         if (thisNode->next->key == key) {
             // the next node is to be removed
             HashTableEntry* tmp = thisNode->next->next;
+            value = thisNode->next->value;
+            if (value) {
+                free(value);
+            }
             free(thisNode->next);
             thisNode->next = tmp;
             return;
