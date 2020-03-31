@@ -111,16 +111,6 @@ int map_area() {
     return map_width() * map_height();
 }
 
-/**
-     * O -----------> x
-     * |
-     * |
-     * |
-     * |
-     * v
-     * y
-     */
-
 MapItem* get_current(int x, int y) {
     MapItem* item = (MapItem*)getItem(map->items, XY_KEY(x, y));
     return item;
@@ -128,13 +118,13 @@ MapItem* get_current(int x, int y) {
 
 MapItem* get_north(int x, int y) {
     //TODO: edge case y = 0;
-    MapItem* item = (MapItem*)getItem(map->items, XY_KEY(x, y - 1));
+    MapItem* item = (MapItem*)getItem(map->items, XY_KEY(x, y + 1));
     return item;
 }
 
 MapItem* get_south(int x, int y) {
     //TODO: edge case y = y_max;
-    MapItem* item = (MapItem*)getItem(map->items, XY_KEY(x, y + 1));
+    MapItem* item = (MapItem*)getItem(map->items, XY_KEY(x, y - 1));
     return item;
 }
 

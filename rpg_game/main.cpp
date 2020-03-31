@@ -15,6 +15,8 @@ void playSound(char* wav);
 struct {
     int x, y;    // Current locations
     int px, py;  // Previous locations
+    MapItem* selected;
+    int cx, cy;  // Character location
 } Camera;
 
 /**
@@ -99,30 +101,37 @@ int update_game(int action, int* mode, int* active_player) {
     switch (action) {
         case ACTION_BUTTON:
             if (*mode == MODE_FREE_ROAM) {
-                int selected = check_char_select(Camera.px, Camera.py, *active_player);
-                if (selected) {
+                if (check_char_select(Camera.px, Camera.py, *active_player)) {
                     *mode = MODE_SELECTED;
                 }
                 update = NO_RESULT
             } else if (*mode == MODE_SELECTED) {
-                update = update_move_character(Camera.px, Camera.py);
+                update_move_character(Camera.px, Camera.py);
+                end_turn(active_player, mode);
+                update = NO_RESULT;
             }
 
             break;
         case BACK_BUTTON:
-            update = update_back();
+            if (*mode == MODE_FREE_ROAM) {
+                end_turn(active_player, mode);
+                update = NO_RESULT;
+            } else if (*mode == MODE_SELECTED) {
+                Camera->selected = NULL;
+                *mode = MODE_FREE_ROAM;
+                update = NO_RESULT;
+            }
             break;
         case GO_UP:
-            update = update_loc(GO_UP);
-            break;
         case GO_LEFT:
-            update = update_loc(GO_LEFT);
-            break;
         case GO_DOWN:
-            update = update_loc(GO_DOWN);
-            break;
         case GO_RIGHT:
-            update = update_loc(GO_RIGHT);
+            if (*mode == MODE_FREE_ROAM) {
+                update_cursor(Camera.px, Camera.py, action);
+            } else if (*mode == MODE_SELECTED) {
+                update_char_cursor(Camera.px, Camera.py, action, Camera->selected->data->range);
+            }
+            update = NO_RESULT;
             break;
         default:
             break;
@@ -138,11 +147,91 @@ int check_char_select(int x, int y, int player_id) {
     MapItem* item = get_current(x, y);
     if (item->type == CHARACTERSPRITE) {
         if (item->data->team == player_id) {
+            Camera->selected = item;
+            Camera->cx = x;
+            Camera->cy = y;
             return true;
         }
     }
 
     return false;
+}
+
+void end_turn(int* active_player, int* mode) {
+    Camera->selected = NULL;
+    *active_player = ((*active_player) + 1) % NUM_PLAYERS;
+    *mode = MODE_FREE_ROAM;
+}
+
+void update_move_character(int x, int y) {
+    MapItem* character = Camera->selected;
+    if (!character) {
+        return -1;
+    }
+
+    add_character(x, y, character->data);
+    map_erase(Camera->cx, Camera->cy);
+}
+
+void update_cursor(int x, int y, int dir) {
+    MapItem* item;
+
+    switch (dir) {
+        case GO_UP:
+            item = get_current(x, ++y);
+            break;
+        case GO_DOWN:
+            item = get_current(x, --y);
+            break;
+        case GO_LEFT:
+            item = get_current(--x, y);
+            break;
+        case GO_RIGHT:
+            item = get_current(++x, y);
+            break;
+        default:
+            item = NULL;
+            printf("update_char_cursor::INVALID DIRECTION!");
+            break;
+    }
+
+    if ((!item) || (item->type != WALL)) {
+        Camera.x = x;
+        Camera.y = y;
+    }
+}
+
+void update_char_cursor(int x, int y, int dir, int range) {
+    int cx = Camera->cx;
+    int cy = Camera->cy;
+
+    MapItem* item;
+
+    switch (dir) {
+        case GO_UP:
+            item = get_current(x, ++y);
+            break;
+        case GO_DOWN:
+            item = get_current(x, --y);
+            break;
+        case GO_LEFT:
+            item = get_current(--x, y);
+            break;
+        case GO_RIGHT:
+            item = get_current(++x, y);
+            break;
+        default:
+            item = NULL;
+            printf("update_char_cursor::INVALID DIRECTION!");
+            break;
+    }
+
+    if ((!item) || (item->walkable)) {
+        if (!(abs(x - cx) > range) && !(abs(y - cy) > range)) {
+            Camera.x = x;
+            Camera.y = y;
+        }
+    }
 }
 
 /**
