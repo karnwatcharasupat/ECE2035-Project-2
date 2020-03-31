@@ -1,7 +1,8 @@
 // Project includes
 #include <math.h>
 #include <stdio.h>
-#include <cstddef> 
+
+#include <cstddef>
 
 #include "globals.h"
 #include "graphics.h"
@@ -17,7 +18,6 @@ void end_turn(int* active_player, int* mode);
 void update_move_character(int x, int y);
 void update_cursor(int x, int y, int dir);
 void update_char_cursor(int x, int y, int dir, int range);
-
 
 // Top down camera view
 struct {
@@ -56,11 +56,9 @@ int get_action(GameInputs inputs) {
         return BACK_BUTTON;
     } else {
         int action = get_action_from_accel(inputs);
-//        pc.printf("ACC: %d\n", action);
+        //        pc.printf("ACC: %d\n", action);
         return action;
     }
-    
-    
 }
 
 /**
@@ -72,8 +70,8 @@ int get_action_from_accel(GameInputs inputs) {
     double y_abs = fabs(inputs.ay);
     int x_dir = (inputs.ax > 0);  // 1 for RIGHT, 0 for LEFT
     int y_dir = (inputs.ay > 0);  // 1 for UP, 0 for DOWN
-    
-//    pc.printf("ax: %g, ay: %g", inputs.ax, inputs.ay);
+
+    //    pc.printf("ax: %g, ay: %g", inputs.ax, inputs.ay);
 
     if ((x_abs > ACCEL_THRESHOLD) || (y_abs > ACCEL_THRESHOLD)) {
         // if either value is greater than the threshold
@@ -123,8 +121,8 @@ int update_game(int action, int* mode, int* active_player) {
             } else if (*mode == MODE_SELECTED) {
                 update_move_character(Camera.px, Camera.py);
                 update = check_attack(Camera.px, Camera.py, *active_player);
-                
-                if(update != GAME_OVER){
+
+                if (update != GAME_OVER) {
                     end_turn(active_player, mode);
                 }
                 pc.printf("character moved\n");
@@ -153,7 +151,7 @@ int update_game(int action, int* mode, int* active_player) {
                 update_char_cursor(Camera.px, Camera.py, action, Camera.selected->range);
                 update = FULL_DRAW;
             }
-            
+
             break;
         default:
             update = NO_RESULT;
@@ -165,52 +163,48 @@ int update_game(int action, int* mode, int* active_player) {
 /**
  * Return the player_id of the winning player if applicable. Otherwise, return 0;
  */
- 
+
 #define END_ATTACK 0
 #define CONTINUE_ATTACK 1
-int check_attack(int x, int y, int player_id){
-    
-    int con = attack_routine(x, y, x, y+1, player_id);
-    
-    if (is_game_over()){
+int check_attack(int x, int y, int player_id) {
+    int con = attack_routine(x, y, x, y + 1, player_id);
+
+    if (is_game_over()) {
         return GAME_OVER;
     }
-    
-    if(con){
-        con = attack_routine(x, y, x, y-1, player_id);
-        
-        if (is_game_over()){
+
+    if (con) {
+        con = attack_routine(x, y, x, y - 1, player_id);
+
+        if (is_game_over()) {
             return GAME_OVER;
         }
     }
-    
-    
-    if(con){
-        con = attack_routine(x, y, x+1, y, player_id);
-        if (is_game_over()){
+
+    if (con) {
+        con = attack_routine(x, y, x + 1, y, player_id);
+        if (is_game_over()) {
             return GAME_OVER;
         }
     }
-    
-    
-    
-    if(con){
-        con = attack_routine(x, y, x-1, y, player_id);
-        if (is_game_over()){
+
+    if (con) {
+        con = attack_routine(x, y, x - 1, y, player_id);
+        if (is_game_over()) {
             return GAME_OVER;
         }
     }
-    
+
     return FULL_DRAW;
 }
 
-int is_game_over(){
+int is_game_over() {
     // only support 2 player at the moment
-    if (Camera.charCount[0] == 0){
+    if (Camera.charCount[0] == 0) {
         return 2;
-    else if (Camera.charCount[1] == 0){
+    } else if (Camera.charCount[1] == 0) {
         return 1;
-    else{
+    } else {
         return 0;
     }
 }
@@ -219,23 +213,23 @@ int is_game_over(){
 #define ENEMY_DEAD 1
 #define PLAYER_DEAD 2
 
-int attack_routine(int x, int y, int en_x, int en_y, int player_id){
+int attack_routine(int x, int y, int en_x, int en_y, int player_id) {
     Character* currentChar = Camera.selected;
     MapItem* item = get_here(en_x, en_y);
-    if(!item){
+    if (!item) {
         return CONTINUE_ATTACK;
     }
-    
+
     int result = -1;
-    
-    if(item->type == CHARACTER){
+
+    if (item->type == CHARACTER) {
         Character* enemy = item->data;
-        if(enemy->team != player_id){
+        if (enemy->team != player_id) {
             result = attack(currentChar, enemy);
         }
     }
-    
-    switch(result){
+
+    switch (result) {
         case PLAYER_DEAD:
             map_erase(x, y);
             return END_ATTACK;
@@ -247,29 +241,28 @@ int attack_routine(int x, int y, int en_x, int en_y, int player_id){
     }
 }
 
-int attack(Character* attacker, Character* defender){
+int attack(Character* attacker, Character* defender) {
     int damage = (attacker->atk) - (defender->def);
-    
-    if(damage > 0){
+
+    if (damage > 0) {
         defender->health -= damage;
-        if (defender->health <= 0){
+        if (defender->health <= 0) {
             Camera.charCount[defender->team - 1] -= 1;
             return ENEMY_DEAD;
         }
     }
-    
+
     damage = (defender->def) - (attacker->atk);
-    if(damage > 0){
+    if (damage > 0) {
         attacker->health -= damage;
-        if (attacker->health <= 0){
+        if (attacker->health <= 0) {
             Camera.charCount[attacker->team - 1] -= 1;
             return PLAYER_DEAD;
         }
     }
-    
+
     return NO_CASUALTY;
 }
-
 
 /**
  *  Return true if the cursor is on the character owned by the current player
@@ -293,17 +286,23 @@ int check_char_select(int x, int y, int player_id) {
 void end_turn(int* active_player, int* mode) {
     pc.printf("end turn\n");
     Camera.selected = NULL;
+    int old_player = *active_player;
     *active_player = (*active_player) + 1;
-    if (*active_player > NUM_PLAYERS){
+    if (*active_player > NUM_PLAYERS) {
         *active_player = 1;
     }
     *mode = MODE_FREE_ROAM;
+
+    char* line1 = sprintf("Player %d ended their turn!", old_player);
+    char* line2 = sprintf("It's Player %d's turn now!", *active_player);
+
+    speech(line1, line2);
 }
 
 void update_move_character(int x, int y) {
     Character* character = Camera.selected;
-    
-    if((Camera.cx != x) || (Camera.cy != y)){
+
+    if ((Camera.cx != x) || (Camera.cy != y)) {
         add_character(x, y, character);
         map_erase(Camera.cx, Camera.cy);
     }
@@ -338,7 +337,7 @@ void update_cursor(int x, int y, int dir) {
 }
 
 void update_char_cursor(int x, int y, int dir, int range) {
-//    int range = data->range;
+    //    int range = data->range;
     int cx = Camera.cx;
     int cy = Camera.cy;
 
@@ -481,7 +480,7 @@ int main() {
             characters[i][j].health = 100;
             characters[i][j].team = i + 1;
 
-            characters[i][j].x = 2*i + 5;
+            characters[i][j].x = 2 * i + 5;
             characters[i][j].y = j + 5;
 
             add_character(characters[i][j].x, characters[i][j].y, &characters[i][j]);
@@ -503,29 +502,29 @@ int main() {
         // Timer to measure game update speed
         Timer t;
         t.start();
-        
-//        pc.printf("STARTING\n");
+
+        //        pc.printf("STARTING\n");
         // 1. Read inputs
         inputs = read_inputs();
-//        pc.printf("INPUT READ\n");
+        //        pc.printf("INPUT READ\n");
         // 2. Determine action (move, act, menu, etc.)
         action = get_action(inputs);
-//        pc.printf("ACTION RETRIEVED\n");
+        //        pc.printf("ACTION RETRIEVED\n");
         // 3. Update game
         old_player = active_player;
         update = update_game(action, &mode, &active_player);
-        if (active_player != old_player){
+        if (active_player != old_player) {
             pc.printf("ACTIVE PLAYER: %d\n", active_player);
         }
-        
-//        pc.printf("UPDATED\n");
+
+        //        pc.printf("UPDATED\n");
         // 3b. Check for game over
         if (update == GAME_OVER) {
             // call game over routine
         }
         // 4. Draw screen
         draw_game((update == FULL_DRAW));
-//        pc.printf("DRAWN\n");
+        //        pc.printf("DRAWN\n");
 
         // Compute update time
         t.stop();
@@ -533,4 +532,3 @@ int main() {
         if (dt < REFRESH_PERIOD) wait_ms(REFRESH_PERIOD - dt);
     }
 }
-
