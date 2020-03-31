@@ -2,6 +2,7 @@
 #define MAP_H
 
 #include "hash_table.h"
+#include "globals.h"
 
 /**
  * A structure to represent the map. The implementation is private.
@@ -150,6 +151,6 @@ void add_wall(int x, int y, int dir, int len);
  */
 void add_plant(int x, int y);
 
-void add_character(int x, int y, void* player_data);
+void add_character(int x, int y, Character* player_data);
 
 #endif  //MAP_H

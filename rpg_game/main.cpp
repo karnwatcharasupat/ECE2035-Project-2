@@ -1,6 +1,7 @@
 // Project includes
 #include <math.h>
 #include <stdio.h>
+#include <cstddef> 
 
 #include "globals.h"
 #include "graphics.h"
@@ -10,13 +11,21 @@
 
 // Helper function declarations
 void playSound(char* wav);
+int get_action_from_accel(GameInputs inputs);
+int check_char_select(int x, int y, int player_id);
+void end_turn(int* active_player, int* mode);
+void update_move_character(int x, int y);
+void update_cursor(int x, int y, int dir);
+void update_char_cursor(int x, int y, int dir, int range);
+
 
 // Top down camera view
 struct {
     int x, y;    // Current locations
     int px, py;  // Previous locations
-    MapItem* selected;
+    Character* selected;
     int cx, cy;  // Character location
+    int charCount[NUM_PLAYERS];
 } Camera;
 
 /**
@@ -40,26 +49,31 @@ int get_action(GameInputs inputs) {
     */
 
     if (inputs.b1) {
+        pc.printf("ACTION\n");
         return ACTION_BUTTON;
     } else if (inputs.b2) {
+        pc.printf("BACK\n");
         return BACK_BUTTON;
     } else {
         int action = get_action_from_accel(inputs);
+//        pc.printf("ACC: %d\n", action);
         return action;
     }
-
-    return NO_ACTION;
+    
+    
 }
 
 /**
  * Given the game inputs, determine what kind of movement needs to happen
  */
-#define ACCEL_THRESHOLD 0.0
+#define ACCEL_THRESHOLD 0.2
 int get_action_from_accel(GameInputs inputs) {
     double x_abs = fabs(inputs.ax);
     double y_abs = fabs(inputs.ay);
     int x_dir = (inputs.ax > 0);  // 1 for RIGHT, 0 for LEFT
     int y_dir = (inputs.ay > 0);  // 1 for UP, 0 for DOWN
+    
+//    pc.printf("ax: %g, ay: %g", inputs.ax, inputs.ay);
 
     if ((x_abs > ACCEL_THRESHOLD) || (y_abs > ACCEL_THRESHOLD)) {
         // if either value is greater than the threshold
@@ -103,12 +117,17 @@ int update_game(int action, int* mode, int* active_player) {
             if (*mode == MODE_FREE_ROAM) {
                 if (check_char_select(Camera.px, Camera.py, *active_player)) {
                     *mode = MODE_SELECTED;
+                    pc.printf("MODE: SELECTED\n");
                 }
-                update = NO_RESULT
+                update = NO_RESULT;
             } else if (*mode == MODE_SELECTED) {
                 update_move_character(Camera.px, Camera.py);
-                end_turn(active_player, mode);
-                update = NO_RESULT;
+                update = check_attack(Camera.px, Camera.py, *active_player);
+                
+                if(update != GAME_OVER){
+                    end_turn(active_player, mode);
+                }
+                pc.printf("character moved\n");
             }
 
             break;
@@ -116,8 +135,9 @@ int update_game(int action, int* mode, int* active_player) {
             if (*mode == MODE_FREE_ROAM) {
                 end_turn(active_player, mode);
                 update = NO_RESULT;
+                pc.printf("character released\n");
             } else if (*mode == MODE_SELECTED) {
-                Camera->selected = NULL;
+                Camera.selected = NULL;
                 *mode = MODE_FREE_ROAM;
                 update = NO_RESULT;
             }
@@ -128,16 +148,128 @@ int update_game(int action, int* mode, int* active_player) {
         case GO_RIGHT:
             if (*mode == MODE_FREE_ROAM) {
                 update_cursor(Camera.px, Camera.py, action);
+                update = NO_RESULT;
             } else if (*mode == MODE_SELECTED) {
-                update_char_cursor(Camera.px, Camera.py, action, Camera->selected->data->range);
+                update_char_cursor(Camera.px, Camera.py, action, Camera.selected->range);
+                update = FULL_DRAW;
             }
-            update = NO_RESULT;
+            
             break;
         default:
+            update = NO_RESULT;
             break;
     }
-    return NO_RESULT;
+    return update;
 }
+
+/**
+ * Return the player_id of the winning player if applicable. Otherwise, return 0;
+ */
+ 
+#define END_ATTACK 0
+#define CONTINUE_ATTACK 1
+int check_attack(int x, int y, int player_id){
+    
+    int con = attack_routine(x, y, x, y+1, player_id);
+    
+    if (is_game_over()){
+        return GAME_OVER;
+    }
+    
+    if(con){
+        con = attack_routine(x, y, x, y-1, player_id);
+        
+        if (is_game_over()){
+            return GAME_OVER;
+        }
+    }
+    
+    
+    if(con){
+        con = attack_routine(x, y, x+1, y, player_id);
+        if (is_game_over()){
+            return GAME_OVER;
+        }
+    }
+    
+    
+    
+    if(con){
+        con = attack_routine(x, y, x-1, y, player_id);
+        if (is_game_over()){
+            return GAME_OVER;
+        }
+    }
+    
+    return FULL_DRAW;
+}
+
+int is_game_over(){
+    // only support 2 player at the moment
+    if (Camera.charCount[0] == 0){
+        return 2;
+    else if (Camera.charCount[1] == 0){
+        return 1;
+    else{
+        return 0;
+    }
+}
+
+#define NO_CASUALTY 0
+#define ENEMY_DEAD 1
+#define PLAYER_DEAD 2
+
+int attack_routine(int x, int y, int en_x, int en_y, int player_id){
+    Character* currentChar = Camera.selected;
+    MapItem* item = get_here(en_x, en_y);
+    if(!item){
+        return CONTINUE_ATTACK;
+    }
+    
+    int result = -1;
+    
+    if(item->type == CHARACTER){
+        Character* enemy = item->data;
+        if(enemy->team != player_id){
+            result = attack(currentChar, enemy);
+        }
+    }
+    
+    switch(result){
+        case PLAYER_DEAD:
+            map_erase(x, y);
+            return END_ATTACK;
+            break;
+        case ENEMY_DEAD:
+            map_erase(en_x, en_y);
+        default:
+            return CONTINUE_ATTACK;
+    }
+}
+
+int attack(Character* attacker, Character* defender){
+    int damage = (attacker->atk) - (defender->def);
+    
+    if(damage > 0){
+        defender->health -= damage;
+        if (defender->health <= 0){
+            Camera.charCount[defender->team - 1] -= 1;
+            return ENEMY_DEAD;
+        }
+    }
+    
+    damage = (defender->def) - (attacker->atk);
+    if(damage > 0){
+        attacker->health -= damage;
+        if (attacker->health <= 0){
+            Camera.charCount[attacker->team - 1] -= 1;
+            return PLAYER_DEAD;
+        }
+    }
+    
+    return NO_CASUALTY;
+}
+
 
 /**
  *  Return true if the cursor is on the character owned by the current player
@@ -146,10 +278,11 @@ int check_char_select(int x, int y, int player_id) {
     Map* map = get_active_map();
     MapItem* item = get_current(x, y);
     if (item->type == CHARACTERSPRITE) {
-        if (item->data->team == player_id) {
-            Camera->selected = item;
-            Camera->cx = x;
-            Camera->cy = y;
+        Character* character = (Character*)(item->data);
+        if (character->team == player_id) {
+            Camera.selected = character;
+            Camera.cx = x;
+            Camera.cy = y;
             return true;
         }
     }
@@ -158,19 +291,22 @@ int check_char_select(int x, int y, int player_id) {
 }
 
 void end_turn(int* active_player, int* mode) {
-    Camera->selected = NULL;
-    *active_player = ((*active_player) + 1) % NUM_PLAYERS;
+    pc.printf("end turn\n");
+    Camera.selected = NULL;
+    *active_player = (*active_player) + 1;
+    if (*active_player > NUM_PLAYERS){
+        *active_player = 1;
+    }
     *mode = MODE_FREE_ROAM;
 }
 
 void update_move_character(int x, int y) {
-    MapItem* character = Camera->selected;
-    if (!character) {
-        return -1;
+    Character* character = Camera.selected;
+    
+    if((Camera.cx != x) || (Camera.cy != y)){
+        add_character(x, y, character);
+        map_erase(Camera.cx, Camera.cy);
     }
-
-    add_character(x, y, character->data);
-    map_erase(Camera->cx, Camera->cy);
 }
 
 void update_cursor(int x, int y, int dir) {
@@ -191,7 +327,7 @@ void update_cursor(int x, int y, int dir) {
             break;
         default:
             item = NULL;
-            printf("update_char_cursor::INVALID DIRECTION!");
+            pc.printf("update_char_cursor::INVALID DIRECTION!");
             break;
     }
 
@@ -202,8 +338,9 @@ void update_cursor(int x, int y, int dir) {
 }
 
 void update_char_cursor(int x, int y, int dir, int range) {
-    int cx = Camera->cx;
-    int cy = Camera->cy;
+//    int range = data->range;
+    int cx = Camera.cx;
+    int cy = Camera.cy;
 
     MapItem* item;
 
@@ -222,7 +359,7 @@ void update_char_cursor(int x, int y, int dir, int range) {
             break;
         default:
             item = NULL;
-            printf("update_char_cursor::INVALID DIRECTION!");
+            pc.printf("update_char_cursor::INVALID DIRECTION!");
             break;
     }
 
@@ -230,6 +367,8 @@ void update_char_cursor(int x, int y, int dir, int range) {
         if (!(abs(x - cx) > range) && !(abs(y - cy) > range)) {
             Camera.x = x;
             Camera.y = y;
+        } else {
+            pc.printf("out of range\n");
         }
     }
 }
@@ -317,8 +456,8 @@ void init_main_map() {
  * implementation should be elsewhere - this holds the game loop, and should
  * read like a road map for the rest of the code.
  */
-#define NUM_CHARACTERS 3
-#define NUM_PLAYERS 2
+
+#define REFRESH_PERIOD 200
 int main() {
     // First things first: initialize hardware
     ASSERT_P(hardware_init() == ERROR_NONE, "Hardware init failed!");
@@ -334,15 +473,16 @@ int main() {
     // Initialize Characters
     Character characters[NUM_PLAYERS][NUM_CHARACTERS];
     for (int i = 0; i < NUM_PLAYERS; i++) {
+        Camera.charCount[i] = NUM_PLAYERS;
         for (int j = 0; j < NUM_CHARACTERS; j++) {
             characters[i][j].atk = 10;
             characters[i][j].def = 20;
-            characters[i][j].rng = 2;
+            characters[i][j].range = 2;
             characters[i][j].health = 100;
             characters[i][j].team = i + 1;
 
-            characters[i][j].x = i;
-            characters[i][j].y = j;
+            characters[i][j].x = 2*i + 5;
+            characters[i][j].y = j + 5;
 
             add_character(characters[i][j].x, characters[i][j].y, &characters[i][j]);
         }
@@ -353,7 +493,7 @@ int main() {
     GameInputs inputs = read_inputs();
     int action = -1, update = -1;
     int mode = MODE_FREE_ROAM;
-    int active_player = 1;
+    int active_player = 1, old_player = 0;
 
     // Initial drawing
     draw_game(true);
@@ -363,23 +503,34 @@ int main() {
         // Timer to measure game update speed
         Timer t;
         t.start();
-
+        
+//        pc.printf("STARTING\n");
         // 1. Read inputs
         inputs = read_inputs();
+//        pc.printf("INPUT READ\n");
         // 2. Determine action (move, act, menu, etc.)
         action = get_action(inputs);
+//        pc.printf("ACTION RETRIEVED\n");
         // 3. Update game
+        old_player = active_player;
         update = update_game(action, &mode, &active_player);
+        if (active_player != old_player){
+            pc.printf("ACTIVE PLAYER: %d\n", active_player);
+        }
+        
+//        pc.printf("UPDATED\n");
         // 3b. Check for game over
         if (update == GAME_OVER) {
             // call game over routine
         }
         // 4. Draw screen
         draw_game((update == FULL_DRAW));
+//        pc.printf("DRAWN\n");
 
         // Compute update time
         t.stop();
         int dt = t.read_ms();
-        if (dt < 100) wait_ms(100 - dt);
+        if (dt < REFRESH_PERIOD) wait_ms(REFRESH_PERIOD - dt);
     }
 }
+

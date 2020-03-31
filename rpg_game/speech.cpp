@@ -55,3 +55,4 @@ void speech(const char* line1, const char* line2)
 void long_speech(const char* lines[], int n)
 {
 }
+

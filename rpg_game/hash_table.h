@@ -86,7 +86,7 @@ void destroyHashTable(HashTable* myHashTable);
  * @param value The value to be stored in the hash table.
  * @return old value if it is overwritten, or NULL if not replaced
  */
-void* insertItem(HashTable* myHashTable, unsigned int key, void* value);
+void* insertItem(HashTable* hashTable, unsigned int key, void* value);
 
 /**
  * getItem
@@ -125,3 +125,4 @@ void* removeItem(HashTable* myHashTable, unsigned int key);
 void deleteItem(HashTable* myHashTable, unsigned int key);
 
 #endif
+

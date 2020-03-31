@@ -43,7 +43,7 @@ void draw_player1sprite(int u, int v)
 void draw_player2sprite(int u, int v)
 {
 //    pc.printf("Drawing Player 2 Sprite\r\n");
-    uLCD.filled_rectangle(u, v, u+10, v+10, GREEN);
+    uLCD.filled_rectangle(u, v, u+10, v+10, 0xa232a8);
 }
 
 void draw_selection(int u, int v)
@@ -57,7 +57,6 @@ void draw_upper_status()
 {
     // Draw bottom border of status bar
     uLCD.line(0, 9, 127, 9, GREEN);
-    
     // Add other status info drawing code here
 }
  
@@ -76,5 +75,14 @@ void draw_border()
     uLCD.filled_rectangle(0,   114, 127, 117, WHITE); // Bottom
     uLCD.filled_rectangle(124,  14, 127, 117, WHITE); // Right
 }
+
+void draw_game_over(int winner){
+    uLCD.cls();
+    
+    char str*
+    sprintf(str, "P%d won!", winner);
+    uLCD.printf(str, 0, 0, 10, WHITE); 
+}
  
  
+

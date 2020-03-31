@@ -2,7 +2,6 @@
 
 #include "globals.h"
 #include "graphics.h"
-
 /**
  * The Map structure. This holds a HashTable for all the MapItems, along with
  * values for the width and height of the Map.
@@ -112,35 +111,41 @@ int map_area() {
 }
 
 MapItem* get_current(int x, int y) {
+    Map* map = get_active_map();
     MapItem* item = (MapItem*)getItem(map->items, XY_KEY(x, y));
     return item;
 }
 
 MapItem* get_north(int x, int y) {
     //TODO: edge case y = 0;
+    Map* map = get_active_map();
     MapItem* item = (MapItem*)getItem(map->items, XY_KEY(x, y + 1));
     return item;
 }
 
 MapItem* get_south(int x, int y) {
     //TODO: edge case y = y_max;
+    Map* map = get_active_map();
     MapItem* item = (MapItem*)getItem(map->items, XY_KEY(x, y - 1));
     return item;
 }
 
 MapItem* get_east(int x, int y) {
     //TODO: edge case x = x_max;
+    Map* map = get_active_map();
     MapItem* item = (MapItem*)getItem(map->items, XY_KEY(x + 1, y));
     return item;
 }
 
 MapItem* get_west(int x, int y) {
     //TODO: edge case x = 0;
+    Map* map = get_active_map();
     MapItem* item = (MapItem*)getItem(map->items, XY_KEY(x - 1, y));
     return item;
 }
 
 MapItem* get_here(int x, int y) {
+    Map* map = get_active_map();
     MapItem* item = (MapItem*)getItem(map->items, XY_KEY(x, y));
     return item;
 }
@@ -149,6 +154,7 @@ MapItem* get_here(int x, int y) {
  * If there is a MapItem at (x,y), remove it from the map.
  */
 void map_erase(int x, int y) {
+    Map* map = get_active_map();
     removeItem(map->items, XY_KEY(x, y));
 }
 
@@ -187,16 +193,17 @@ void add_plant(int x, int y) {
     if (val) free(val);  // If something is already there, free it
 }
 
-void add_character(int x, int y, void* player_data) {
+void add_character(int x, int y, Character* player_data) {
     MapItem* c = (MapItem*)malloc(sizeof(MapItem));
-    w1->type = CHARACTERSPRITE;
+    c->type = CHARACTERSPRITE;
     if (player_data->team == 1) {
-        w1->draw = draw_player1sprite;
+        c->draw = draw_player1sprite;
     } else if (player_data->team == 2) {
-        w1->draw = draw_player2sprite;
+        c->draw = draw_player2sprite;
     }
-    w1->walkable = false;
-    w1->data = player_data;
-    void* val = insertItem(get_active_map()->items, XY_KEY(x, y), w1);
+    c->walkable = false;
+    c->data = player_data;
+    void* val = insertItem(get_active_map()->items, XY_KEY(x, y), (void*)c);
     if (val) free(val);  // If something is already there, free it
 }
+

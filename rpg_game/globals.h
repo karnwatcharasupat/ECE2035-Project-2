@@ -47,4 +47,7 @@ typedef struct {
     int range;
 } Character;
 
+#define NUM_CHARACTERS 3
+#define NUM_PLAYERS 2
+
 #endif  //GLOBAL_H

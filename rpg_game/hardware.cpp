@@ -34,6 +34,8 @@ int hardware_init() {
 
     //Initialize Accelerometer
     acc.activate();
+    
+    pc.baud(9600);
 
     return ERROR_NONE;
 }
@@ -44,7 +46,7 @@ int hardware_init() {
  * Returns a GameInputs struct that has all the inputs recorded.
  * This GameInputs is used elsewhere to compute the game update.
  */
-#define TRIES_THRESH = 10;
+#define TRIES_THRESH 10;
 GameInputs read_inputs() {
     GameInputs in;
     /**
@@ -54,28 +56,31 @@ GameInputs read_inputs() {
     };
     */
 
-    in.b1 = button1;
-    in.b2 = button2;
-    in.b3 = button3;
+    in.b1 = !button1;
+    in.b2 = !button2;
+    in.b3 = !button3;
 
-    int ret = 0;
-    int num_tries = 0;
-    do {
-        if (num_tries > TRIES_THRESH) {
-            pc.printf("Exceed maximum trials. Writing acc as zeros\n\r");
-            in.ax = 0.0;
-            in.ay = 0.0;
-            in.az = 0.0;
-            break;
-        }
-
-        if (num_tries > 0) {
-            pc.printf("Read failed. Trying again...\n\r");
-        }
-        ret = readXYZGravity(&(in.ax), &(in.ay), &(in.az));
-        // returns 1 on failure
-
-    } while (ret);
+//    int ret = 0;
+//    int num_tries = 0;
+    acc.readXYZGravity(&(in.ax), &(in.ay), &(in.az));
+    in.ay = -in.ay;
+    //do {
+//        if (num_tries > TRIES_THRESH) {
+//            pc.printf("Exceed maximum trials. Writing acc as zeros\n\r");
+//            in.ax = 0.0;
+//            in.ay = 0.0;
+//            in.az = 0.0;
+//            break;
+//        }
+//
+//        if (num_tries > 0) {
+//            pc.printf("Read failed. Trying again...\n\r");
+//        }
+//        ret = readXYZGravity(&(in.ax), &(in.ay), &(in.az));
+//        // returns 1 on failure
+//
+//    } while (ret);
 
     return in;
 }
+
