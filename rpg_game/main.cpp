@@ -2,8 +2,6 @@
 #include <math.h>
 #include <stdio.h>
 
-#include <cstddef>
-
 #include "globals.h"
 #include "graphics.h"
 #include "hardware.h"
@@ -427,6 +425,13 @@ void draw_game(int init) {
     draw_lower_status();
 }
 
+void draw_game_over(int winner) {
+    uLCD.cls();
+
+    char* str = sprintf(str, "P%d won!", winner);
+    speech(str, "")
+}
+
 /**
  * Initialize the main world map. Add walls around the edges, interior chambers,
  * and plants in the background so you can see motion.
@@ -520,7 +525,8 @@ int main() {
         //        pc.printf("UPDATED\n");
         // 3b. Check for game over
         if (update == GAME_OVER) {
-            // call game over routine
+            draw_game_over(is_game_over());
+            return;
         }
         // 4. Draw screen
         draw_game((update == FULL_DRAW));
