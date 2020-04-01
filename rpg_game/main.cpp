@@ -146,7 +146,7 @@ int update_game(int action, int* mode, int* active_player) {
             } else if (*mode == MODE_SELECTED) {
                 Camera.selected = NULL;
                 *mode = MODE_FREE_ROAM;
-                update = NO_RESULT;
+                update = FULL_DRAW;
             }
             break;
         case GO_UP:
