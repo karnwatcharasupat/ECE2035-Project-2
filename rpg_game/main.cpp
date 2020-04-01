@@ -16,6 +16,11 @@ void end_turn(int* active_player, int* mode);
 void update_move_character(int x, int y);
 void update_cursor(int x, int y, int dir);
 void update_char_cursor(int x, int y, int dir, int range);
+int check_attack(int x, int y, int player_id);
+int attack_routine(int x, int y, int en_x, int en_y, int player_id);
+int attack(Character* attacker, Character* defender);
+int is_game_over();
+void draw_game(int);
 
 // Top down camera view
 struct {
@@ -122,6 +127,7 @@ int update_game(int action, int* mode, int* active_player) {
 
                 if (update != GAME_OVER) {
                     end_turn(active_player, mode);
+                    draw_game(true);
                 }
                 pc.printf("character moved\n");
             }
@@ -220,8 +226,8 @@ int attack_routine(int x, int y, int en_x, int en_y, int player_id) {
 
     int result = -1;
 
-    if (item->type == CHARACTER) {
-        Character* enemy = item->data;
+    if (item->type == CHARACTERSPRITE) {
+        Character* enemy = (Character*)(item->data);
         if (enemy->team != player_id) {
             result = attack(currentChar, enemy);
         }
@@ -231,7 +237,6 @@ int attack_routine(int x, int y, int en_x, int en_y, int player_id) {
         case PLAYER_DEAD:
             map_erase(x, y);
             return END_ATTACK;
-            break;
         case ENEMY_DEAD:
             map_erase(en_x, en_y);
         default:
@@ -240,22 +245,44 @@ int attack_routine(int x, int y, int en_x, int en_y, int player_id) {
 }
 
 int attack(Character* attacker, Character* defender) {
+    speech("", "Attacking...");
+
     int damage = (attacker->atk) - (defender->def);
 
     if (damage > 0) {
         defender->health -= damage;
+        pc.printf("Enemy health: %d\n", defender->health);
         if (defender->health <= 0) {
             Camera.charCount[defender->team - 1] -= 1;
+            pc.printf("Enemy dead\n");
             return ENEMY_DEAD;
+        }
+    } else {
+        attacker->health += damage;
+        pc.printf("My health: %d\n", attacker->health);
+        if (attacker->health <= 0) {
+            Camera.charCount[attacker->team - 1] -= 1;
+            pc.printf("Player dead\n");
+            return PLAYER_DEAD;
         }
     }
 
     damage = (defender->def) - (attacker->atk);
     if (damage > 0) {
         attacker->health -= damage;
+        pc.printf("My health: %d\n", attacker->health);
         if (attacker->health <= 0) {
             Camera.charCount[attacker->team - 1] -= 1;
+            pc.printf("Player dead\n");
             return PLAYER_DEAD;
+        }
+    } else {
+        defender->health += damage;
+        pc.printf("Enemy health: %d\n", defender->health);
+        if (defender->health <= 0) {
+            Camera.charCount[defender->team - 1] -= 1;
+            pc.printf("Enemy dead\n");
+            return ENEMY_DEAD;
         }
     }
 
@@ -284,17 +311,12 @@ int check_char_select(int x, int y, int player_id) {
 void end_turn(int* active_player, int* mode) {
     pc.printf("end turn\n");
     Camera.selected = NULL;
-    int old_player = *active_player;
     *active_player = (*active_player) + 1;
     if (*active_player > NUM_PLAYERS) {
         *active_player = 1;
     }
     *mode = MODE_FREE_ROAM;
-
-    char* line1 = sprintf("Player %d ended their turn!", old_player);
-    char* line2 = sprintf("It's Player %d's turn now!", *active_player);
-
-    speech(line1, line2);
+    speech("It's your turn!", "Let's go!");
 }
 
 void update_move_character(int x, int y) {
@@ -425,11 +447,10 @@ void draw_game(int init) {
     draw_lower_status();
 }
 
-void draw_game_over(int winner) {
+void draw_game_over() {
     uLCD.cls();
-
-    char* str = sprintf(str, "P%d won!", winner);
-    speech(str, "")
+    uLCD.locate(2, 2);
+    uLCD.printf("YOU WON!");
 }
 
 /**
@@ -451,7 +472,7 @@ void init_main_map() {
     add_wall(map_width() - 1, 0, VERTICAL, map_height());
     pc.printf("Walls done!\r\n");
 
-    print_map();
+    // print_map();
 }
 
 /**
@@ -477,12 +498,12 @@ int main() {
     // Initialize Characters
     Character characters[NUM_PLAYERS][NUM_CHARACTERS];
     for (int i = 0; i < NUM_PLAYERS; i++) {
-        Camera.charCount[i] = NUM_PLAYERS;
+        Camera.charCount[i] = NUM_CHARACTERS;
         for (int j = 0; j < NUM_CHARACTERS; j++) {
-            characters[i][j].atk = 10;
-            characters[i][j].def = 20;
+            characters[i][j].atk = 10 * (2 - i);
+            characters[i][j].def = 1;
             characters[i][j].range = 2;
-            characters[i][j].health = 100;
+            characters[i][j].health = 10 * (i + 1);
             characters[i][j].team = i + 1;
 
             characters[i][j].x = 2 * i + 5;
@@ -525,8 +546,8 @@ int main() {
         //        pc.printf("UPDATED\n");
         // 3b. Check for game over
         if (update == GAME_OVER) {
-            draw_game_over(is_game_over());
-            return;
+            draw_game_over();
+            return 0;
         }
         // 4. Draw screen
         draw_game((update == FULL_DRAW));

@@ -28,11 +28,12 @@ static void draw_speech_line(const char* line, int which);
 static void speech_bubble_wait();
 
 void draw_speech_bubble() {
-    uLCD.filled_rectangle(0, 100, 127, 118, WHITE);
+    uLCD.rectangle(0, 90, 127, 118, BLUE);
+    uLCD.filled_rectangle(0, 90, 127, 118, WHITE);
 }
 
 void erase_speech_bubble() {
-    uLCD.filled_rectangle(0, 100, 127, 118, WHITE);
+    uLCD.filled_rectangle(0, 90, 127, 118, WHITE);
 }
 
 void draw_speech_line(const char* line, int which) {
