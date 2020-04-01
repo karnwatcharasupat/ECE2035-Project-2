@@ -45,6 +45,8 @@ typedef struct {
     int atk, def;
     int health;
     int range;
+    int avoid;
+    int skill;
 } Character;
 
 #define NUM_CHARACTERS 3

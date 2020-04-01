@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <algorithm>
+
 #include "globals.h"
 #include "graphics.h"
 #include "hardware.h"
@@ -23,6 +25,7 @@ int attack(Character* attacker, Character* defender);
 int is_game_over();
 void draw_game(int, int);
 void draw_possible_moves(int x, int y, int range);
+int attack_success(int);
 
 // Top down camera view
 struct {
@@ -250,46 +253,73 @@ int attack_routine(int x, int y, int en_x, int en_y, int player_id) {
 int attack(Character* attacker, Character* defender) {
     speech("", "Attacking...");
 
+    int hit_pc = (attacker->skill) - (defender->avoid);
+
     int damage = (attacker->atk) - (defender->def);
-
-    if (damage > 0) {
-        defender->health -= damage;
-        pc.printf("Enemy health: %d\n", defender->health);
-        if (defender->health <= 0) {
-            Camera.charCount[defender->team - 1] -= 1;
-            pc.printf("Enemy dead\n");
-            return ENEMY_DEAD;
-        }
+    damage = damage * attack_success(hit_pc);
+    if (damage == 0) {
+        speech("", "Avoided!");
     } else {
-        attacker->health += damage;
-        pc.printf("My health: %d\n", attacker->health);
-        if (attacker->health <= 0) {
-            Camera.charCount[attacker->team - 1] -= 1;
-            pc.printf("Player dead\n");
-            return PLAYER_DEAD;
+        if (damage > 0) {
+            defender->health -= damage;
+            pc.printf("Enemy health: %d\n", defender->health);
+            speech("", "Hit!");
+            if (defender->health <= 0) {
+                Camera.charCount[defender->team - 1] -= 1;
+                pc.printf("Enemy dead\n");
+                speech("Enemy lost", "a player!");
+                return ENEMY_DEAD;
+            }
+        } else {
+            attacker->health += damage;
+            speech("", "Backfired!");
+            pc.printf("My health: %d\n", attacker->health);
+            if (attacker->health <= 0) {
+                Camera.charCount[attacker->team - 1] -= 1;
+                pc.printf("Player dead\n");
+                speech("You lost", "a player!");
+                return PLAYER_DEAD;
+            }
         }
     }
 
+    speech("The enemy is", "attacking back!");
+    hit_pc = (defender->skill) - (attacker->avoid);
     damage = (defender->def) - (attacker->atk);
-    if (damage > 0) {
-        attacker->health -= damage;
-        pc.printf("My health: %d\n", attacker->health);
-        if (attacker->health <= 0) {
-            Camera.charCount[attacker->team - 1] -= 1;
-            pc.printf("Player dead\n");
-            return PLAYER_DEAD;
-        }
+    damage = damage * attack_success(hit_pc);
+    if (damage == 0) {
+        speech("", "Avoided!");
     } else {
-        defender->health += damage;
-        pc.printf("Enemy health: %d\n", defender->health);
-        if (defender->health <= 0) {
-            Camera.charCount[defender->team - 1] -= 1;
-            pc.printf("Enemy dead\n");
-            return ENEMY_DEAD;
+        if (damage > 0) {
+            attacker->health -= damage;
+            speech("", "Hit!");
+            pc.printf("My health: %d\n", attacker->health);
+            if (attacker->health <= 0) {
+                Camera.charCount[attacker->team - 1] -= 1;
+                pc.printf("Player dead\n");
+                speech("You lost", "a player!");
+                return PLAYER_DEAD;
+            }
+        } else {
+            defender->health += damage;
+            speech("", "Backfired!");
+            pc.printf("Enemy health: %d\n", defender->health);
+            if (defender->health <= 0) {
+                Camera.charCount[defender->team - 1] -= 1;
+                speech("Enemy lost", "a player!");
+                pc.printf("Enemy dead\n");
+                return ENEMY_DEAD;
+            }
         }
     }
-
     return NO_CASUALTY;
+}
+
+int attack_success(int p) {
+    p = min(max(p, 0), 100);
+    float r = 100.0 * (float)rand() / RAND_MAX;
+    pc.printf("SUCCESS PC: %g, HIT PC: %d\n", r, p);
+    return (r < p);
 }
 
 /**
@@ -550,6 +580,8 @@ int main() {
             characters[i][j].range = 3;
             characters[i][j].health = 10 * (i + 1);
             characters[i][j].team = i + 1;
+            characters[i][j].avoid = 50;
+            characters[i][j].skill = 149;
 
             characters[i][j].x = 2 * i + 5;
             characters[i][j].y = j + 5;
