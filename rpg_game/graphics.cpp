@@ -52,6 +52,11 @@ void draw_wall(int u, int v) {
     // uLCD.filled_rectangle(u, v, u + 10, v + 10, 0xA52A2A);
 }
 
+void draw_potion(int u, int v) {
+    draw_img(u, v, POTION_IMG);
+    // uLCD.filled_rectangle(u, v, u + 10, v + 10, 0xA52A2A);
+}
+
 void draw_player1sprite(int u, int v) {
     //    pc.printf("Drawing Player 1 Sprite\r\n");
     // uLCD.filled_rectangle(u, v, u + 10, v + 10, RED);

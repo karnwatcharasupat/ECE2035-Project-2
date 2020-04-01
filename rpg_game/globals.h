@@ -47,9 +47,11 @@ typedef struct {
     int range;
     int avoid;
     int skill;
+    int potion;
 } Character;
 
 #define NUM_CHARACTERS 3
 #define NUM_PLAYERS 2
+#define MAX_HEALTH 50
 
 #endif  //GLOBAL_H

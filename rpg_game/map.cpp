@@ -216,3 +216,15 @@ void add_character(int x, int y, Character* player_data) {
     void* val = insertItem(get_active_map()->items, XY_KEY(x, y), (void*)c);
     if (val) free(val);  // If something is already there, free it
 }
+
+void add_potion(int x, int y, int heal) {
+    MapItem* w1 = (MapItem*)malloc(sizeof(MapItem));
+    int* heal_data = (int*)malloc(sizeof(int));
+    *heal_data = heal;
+    w1->type = POTION;
+    w1->draw = draw_potion;
+    w1->walkable = true;
+    w1->data = heal_data;
+    void* val = insertItem(get_active_map()->items, XY_KEY(x, y), w1);
+    if (val) free(val);  // If something is already there, free it
+}

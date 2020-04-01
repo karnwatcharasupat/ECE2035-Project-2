@@ -24,6 +24,7 @@ void draw_nothing(int u, int v);
 void draw_wall(int u, int v);
 void draw_plant(int u, int v);
 void draw_rock(int u, int v);
+void draw_potion(int u, int v);
 
 void draw_player1sprite(int u, int v);
 void draw_player2sprite(int u, int v);

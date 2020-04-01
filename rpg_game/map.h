@@ -54,6 +54,7 @@ typedef struct {
 #define CHARACTERSPRITE 2
 #define CLEAR 3
 #define ROCK 4
+#define POTION 5
 
 /**
  * Initializes the internal structures for all maps. This does not populate
@@ -153,6 +154,7 @@ void add_wall(int x, int y, int dir, int len);
 void add_plant(int x, int y);
 
 void add_rock(int x, int y);
+void add_potion(int x, int y, int heal);
 
 void add_character(int x, int y, Character* player_data);
 
