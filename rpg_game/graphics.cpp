@@ -1,5 +1,7 @@
 #include "graphics.h"
 
+#include <algorithm>
+
 #include "globals.h"
 #include "sprite.h"
 
@@ -36,12 +38,17 @@ void draw_img(int u, int v, const char* img) {
 }
 
 void draw_plant(int u, int v) {
-    uLCD.draw_img(u, v, PLANT_IMG);
+    draw_img(u, v, PLANT_IMG);
+    // uLCD.filled_rectangle(u, v, u + 10, v + 10, GREEN);
+}
+
+void draw_rock(int u, int v) {
+    draw_img(u, v, ROCK_IMG);
     // uLCD.filled_rectangle(u, v, u + 10, v + 10, GREEN);
 }
 
 void draw_wall(int u, int v) {
-    uLCD.draw_img(u, v, WALL_IMG);
+    draw_img(u, v, WALL_IMG);
     // uLCD.filled_rectangle(u, v, u + 10, v + 10, 0xA52A2A);
 }
 
@@ -49,17 +56,32 @@ void draw_player1sprite(int u, int v) {
     //    pc.printf("Drawing Player 1 Sprite\r\n");
     // uLCD.filled_rectangle(u, v, u + 10, v + 10, RED);
     // uLCD.filled_circle(u + 5, v + 5, 5, RED);
-    uLCD.draw_img(u, v, PLAYER1_IMG);
+    draw_img(u, v, PLAYER1_IMG);
 }
 void draw_player2sprite(int u, int v) {
     //    pc.printf("Drawing Player 2 Sprite\r\n");
     // uLCD.filled_rectangle(u, v, u + 10, v + 10, 0xa232a8);
     // uLCD.filled_circle(u + 5, v + 5, 5, 0xa232a8);
-    uLCD.draw_img(u, v, PLAYER2_IMG);
+    draw_img(u, v, PLAYER2_IMG);
 }
 
 void draw_selection(int u, int v) {
     uLCD.filled_rectangle(u, v, u + 10, v + 10, LGREY);
+}
+
+#define MIN_X 2
+#define MAX_X 124
+#define MIN_Y 14
+#define MAX_Y 114
+void draw_range(int i, int j) {
+    int u = (i + 5) * 11 + 3;
+    int v = (j + 4) * 11 + 15;
+    int u2 = min(u + 10, MAX_X - 1);
+    int v2 = min(v + 10, MAX_Y - 1);
+    u = max(MIN_X + 1, u);
+    v = max(MIN_Y + 1, v);
+
+    uLCD.rectangle(u, v, u2, v2, 0xFFFF00);
 }
 
 void draw_upper_status() {
@@ -80,4 +102,10 @@ void draw_border() {
     uLCD.filled_rectangle(0, 13, 2, 114, WHITE);      // Left
     uLCD.filled_rectangle(0, 114, 127, 117, WHITE);   // Bottom
     uLCD.filled_rectangle(124, 14, 127, 117, WHITE);  // Right
+}
+
+void draw_game_over() {
+    uLCD.cls();
+    uLCD.locate(3, 5);
+    uLCD.printf("GAME OVER");
 }

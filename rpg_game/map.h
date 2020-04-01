@@ -1,8 +1,8 @@
 #ifndef MAP_H
 #define MAP_H
 
-#include "hash_table.h"
 #include "globals.h"
+#include "hash_table.h"
 
 /**
  * A structure to represent the map. The implementation is private.
@@ -53,6 +53,7 @@ typedef struct {
 #define PLANT 1
 #define CHARACTERSPRITE 2
 #define CLEAR 3
+#define ROCK 4
 
 /**
  * Initializes the internal structures for all maps. This does not populate
@@ -150,6 +151,8 @@ void add_wall(int x, int y, int dir, int len);
  * before adding the plant.
  */
 void add_plant(int x, int y);
+
+void add_rock(int x, int y);
 
 void add_character(int x, int y, Character* player_data);
 

@@ -1,6 +1,7 @@
 // Project includes
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "globals.h"
 #include "graphics.h"
@@ -20,7 +21,8 @@ int check_attack(int x, int y, int player_id);
 int attack_routine(int x, int y, int en_x, int en_y, int player_id);
 int attack(Character* attacker, Character* defender);
 int is_game_over();
-void draw_game(int);
+void draw_game(int, int);
+void draw_possible_moves(int x, int y, int range);
 
 // Top down camera view
 struct {
@@ -127,7 +129,7 @@ int update_game(int action, int* mode, int* active_player) {
 
                 if (update != GAME_OVER) {
                     end_turn(active_player, mode);
-                    draw_game(true);
+                    draw_game(true, *mode);
                 }
                 pc.printf("character moved\n");
             }
@@ -161,6 +163,7 @@ int update_game(int action, int* mode, int* active_player) {
             update = NO_RESULT;
             break;
     }
+
     return update;
 }
 
@@ -308,6 +311,38 @@ int check_char_select(int x, int y, int player_id) {
     return false;
 }
 
+void draw_possible_moves(int x, int y, int range_left) {
+    if (range_left <= 0) {
+        return;
+    }
+
+    MapItem* item;
+
+    item = get_here(x + 1, y);
+    if (!item || item->walkable) {
+        draw_range(x + 1 - Camera.x, y - Camera.y);
+        draw_possible_moves(x + 1, y, range_left - 1);
+    }
+
+    item = get_here(x - 1, y);
+    if (!item || item->walkable) {
+        draw_range(x - 1 - Camera.x, y - Camera.y);
+        draw_possible_moves(x - 1, y, range_left - 1);
+    }
+
+    item = get_here(x, y + 1);
+    if (!item || item->walkable) {
+        draw_range(x - Camera.x, y + 1 - Camera.y);
+        draw_possible_moves(x, y + 1, range_left - 1);
+    }
+
+    item = get_here(x, y - 1);
+    if (!item || item->walkable) {
+        draw_range(x - Camera.x, y - 1 - Camera.y);
+        draw_possible_moves(x, y - 1, range_left - 1);
+    }
+}
+
 void end_turn(int* active_player, int* mode) {
     pc.printf("end turn\n");
     Camera.selected = NULL;
@@ -383,7 +418,8 @@ void update_char_cursor(int x, int y, int dir, int range) {
     }
 
     if ((!item) || (item->walkable)) {
-        if (!(abs(x - cx) > range) && !(abs(y - cy) > range)) {
+        int dist = abs(cx - x) + abs(cy - y);
+        if (dist <= range) {
             Camera.x = x;
             Camera.y = y;
         } else {
@@ -398,7 +434,7 @@ void update_char_cursor(int x, int y, int dir, int range) {
  * bars. Unless init is nonzero, this function will optimize drawing by only
  * drawing tiles that have changed from the previous frame.
  */
-void draw_game(int init) {
+void draw_game(int init, int mode) {
     // Draw game border first
     if (init) draw_border();
 
@@ -442,15 +478,15 @@ void draw_game(int init) {
         }
     }
 
+    if (mode == MODE_SELECTED) {
+        draw_range(Camera.cx - Camera.x, Camera.cy - Camera.y);
+        Character* character = Camera.selected;
+        draw_possible_moves(Camera.cx, Camera.cy, character->range);
+    }
+
     // Draw status bars
     draw_upper_status();
     draw_lower_status();
-}
-
-void draw_game_over() {
-    uLCD.cls();
-    uLCD.locate(2, 2);
-    uLCD.printf("YOU WON!");
 }
 
 /**
@@ -465,6 +501,15 @@ void init_main_map() {
     }
     pc.printf("plants\r\n");
 
+    for (int i = 0; i < map_width(); i++) {
+        for (int j = 0; j < map_height(); j++) {
+            if ((i * map_height() + j) % 47 == 0) {
+                add_rock(i, j);
+            }
+        }
+    }
+    pc.printf("rocks\r\n");
+
     pc.printf("Adding walls!\r\n");
     add_wall(0, 0, HORIZONTAL, map_width());
     add_wall(0, map_height() - 1, HORIZONTAL, map_width());
@@ -472,7 +517,7 @@ void init_main_map() {
     add_wall(map_width() - 1, 0, VERTICAL, map_height());
     pc.printf("Walls done!\r\n");
 
-    // print_map();
+    print_map();
 }
 
 /**
@@ -502,7 +547,7 @@ int main() {
         for (int j = 0; j < NUM_CHARACTERS; j++) {
             characters[i][j].atk = 10 * (2 - i);
             characters[i][j].def = 1;
-            characters[i][j].range = 2;
+            characters[i][j].range = 3;
             characters[i][j].health = 10 * (i + 1);
             characters[i][j].team = i + 1;
 
@@ -521,7 +566,7 @@ int main() {
     int active_player = 1, old_player = 0;
 
     // Initial drawing
-    draw_game(true);
+    draw_game(true, MODE_FREE_ROAM);
 
     // Main game loop
     while (1) {
@@ -550,7 +595,7 @@ int main() {
             return 0;
         }
         // 4. Draw screen
-        draw_game((update == FULL_DRAW));
+        draw_game((update == FULL_DRAW), mode);
         //        pc.printf("DRAWN\n");
 
         // Compute update time

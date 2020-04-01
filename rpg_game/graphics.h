@@ -23,24 +23,27 @@ void draw_img(int u, int v, const char* img);
 void draw_nothing(int u, int v);
 void draw_wall(int u, int v);
 void draw_plant(int u, int v);
+void draw_rock(int u, int v);
 
 void draw_player1sprite(int u, int v);
 void draw_player2sprite(int u, int v);
 void draw_selection(int u, int v);
+void draw_range(int u, int v);
+void draw_game_over();
 
 /**
  * Draw the upper status bar.
  */
 void draw_upper_status();
- 
+
 /**
  * Draw the lower status bar.
- */ 
+ */
 void draw_lower_status();
- 
+
 /**
  * Draw the border for the map.
  */
 void draw_border();
 
-#endif // GRAPHICS_H
+#endif  // GRAPHICS_H
