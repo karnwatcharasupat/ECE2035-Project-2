@@ -45,8 +45,6 @@ void draw_plant(int u, int v) {
     } else {
         draw_img(u, v, PLANT_IMG2);
     }
-
-    // uLCD.filled_rectangle(u, v, u + 10, v + 10, GREEN);
 }
 
 void draw_rock(int u, int v) {
@@ -55,59 +53,42 @@ void draw_rock(int u, int v) {
     } else {
         draw_img(u, v, ROCK_IMG2);
     }
-    // uLCD.filled_rectangle(u, v, u + 10, v + 10, GREEN);
 }
 
 void draw_wall(int u, int v) {
     draw_img(u, v, WALL_IMG);
-    // uLCD.filled_rectangle(u, v, u + 10, v + 10, 0xA52A2A);
 }
 
 void draw_potion(int u, int v) {
     draw_img(u, v, POTION_IMG);
-    // uLCD.filled_rectangle(u, v, u + 10, v + 10, 0xA52A2A);
 }
 
 void draw_player1sprite(int u, int v) {
-    //    pc.printf("Drawing Player 1 Sprite\r\n");
-    // uLCD.filled_rectangle(u, v, u + 10, v + 10, RED);
-    // uLCD.filled_circle(u + 5, v + 5, 5, RED);
     draw_img(u, v, PLAYER1_IMG);
 }
 
 void draw_player1attack(int u, int v) {
-    //    pc.printf("Drawing Player 1 Sprite\r\n");
-    // uLCD.filled_rectangle(u, v, u + 10, v + 10, RED);
-    // uLCD.filled_circle(u + 5, v + 5, 5, RED);
     draw_img(u, v, PLAYER1_ATK);
 }
 
 void draw_player1walk(int u, int v) {
-    //    pc.printf("Drawing Player 1 Sprite\r\n");
-    // uLCD.filled_rectangle(u, v, u + 10, v + 10, RED);
-    // uLCD.filled_circle(u + 5, v + 5, 5, RED);
     draw_img(u, v, PLAYER1_WALK);
 }
 
 void draw_player2sprite(int u, int v) {
-    //    pc.printf("Drawing Player 2 Sprite\r\n");
-    // uLCD.filled_rectangle(u, v, u + 10, v + 10, 0xa232a8);
-    // uLCD.filled_circle(u + 5, v + 5, 5, 0xa232a8);
     draw_img(u, v, PLAYER2_IMG);
 }
 
 void draw_player2attack(int u, int v) {
-    //    pc.printf("Drawing Player 1 Sprite\r\n");
-    // uLCD.filled_rectangle(u, v, u + 10, v + 10, RED);
-    // uLCD.filled_circle(u + 5, v + 5, 5, RED);
     draw_img(u, v, PLAYER2_ATK);
 }
 
 void draw_player2walk(int u, int v) {
-    //    pc.printf("Drawing Player 1 Sprite\r\n");
-    // uLCD.filled_rectangle(u, v, u + 10, v + 10, RED);
-    // uLCD.filled_circle(u + 5, v + 5, 5, RED);
     draw_img(u, v, PLAYER2_WALK);
+}
+
+void draw_footstep(int u, int v) {
+    draw_img(u, v, FOOTSTEP_IMG);
 }
 
 void draw_selection(int u, int v) {

@@ -55,12 +55,14 @@ typedef struct {
 #define CLEAR 3
 #define ROCK 4
 #define POTION 5
+#define FOOTSTEP 6
 
 /**
  * Initializes the internal structures for all maps. This does not populate
  * the map with items, but allocates space for them, initializes the hash tables, 
  * and sets the width and height.
  */
+
 void maps_init();
 
 /**
@@ -157,5 +159,7 @@ void add_rock(int x, int y);
 void add_potion(int x, int y, int* heal);
 
 void add_character(int x, int y, Character* player_data);
+
+void add_footstep(int x, int y);
 
 #endif  //MAP_H

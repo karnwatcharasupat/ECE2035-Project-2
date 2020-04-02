@@ -9,11 +9,11 @@
 // without the extern keyword). That's what this file does!
 
 // Hardware initialization: Instantiate all the things!
-uLCD_4DGL uLCD(p9, p10, p11);           // LCD Screen (tx, rx, reset)
-SDFileSystem sd(p5, p6, p7, p8, "sd");  // SD Card(mosi, miso, sck, cs)
-Serial pc(USBTX, USBRX);                // USB Console (tx, rx)
-MMA8452 acc(p28, p27, 100000);          // Accelerometer (sda, sdc, rate)
-DigitalIn button1(p21);                 // Pushbuttons (pin)
+uLCD_4DGL uLCD(p9, p10, p11);  // LCD Screen (tx, rx, reset)
+// SDFileSystem sd(p5, p6, p7, p8, "sd");  // SD Card(mosi, miso, sck, cs)
+Serial pc(USBTX, USBRX);        // USB Console (tx, rx)
+MMA8452 acc(p28, p27, 100000);  // Accelerometer (sda, sdc, rate)
+DigitalIn button1(p21);         // Pushbuttons (pin)
 DigitalIn button2(p22);
 DigitalIn button3(p23);
 AnalogOut DACout(p18);  // Speaker (pin)
@@ -69,22 +69,5 @@ GameInputs read_inputs() {
     //    int num_tries = 0;
     acc.readXYZGravity(&(in.ax), &(in.ay), &(in.az));
     in.ay = -in.ay;
-    //do {
-    //        if (num_tries > TRIES_THRESH) {
-    //            pc.printf("Exceed maximum trials. Writing acc as zeros\n\r");
-    //            in.ax = 0.0;
-    //            in.ay = 0.0;
-    //            in.az = 0.0;
-    //            break;
-    //        }
-    //
-    //        if (num_tries > 0) {
-    //            pc.printf("Read failed. Trying again...\n\r");
-    //        }
-    //        ret = readXYZGravity(&(in.ax), &(in.ay), &(in.az));
-    //        // returns 1 on failure
-    //
-    //    } while (ret);
-
     return in;
 }

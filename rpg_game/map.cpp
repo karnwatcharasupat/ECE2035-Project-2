@@ -82,7 +82,7 @@ Map* get_map(int m) {
  * Print the active map to the serial console.
  */
 void print_map() {
-    char lookup[] = {'W', 'D', 'P', 'A', 'K', 'C', 'N', ' ', 'S'};
+    char lookup[] = {'W', 'P', ' ', ' ', 'R', 'H', ' ', 'S'};
     Map* map = get_active_map();
     for (int j = 0; j < map->h; j++) {
         for (int i = 0; i < map->w; i++) {
@@ -195,7 +195,7 @@ void add_plant(int x, int y) {
 
 void add_rock(int x, int y) {
     MapItem* w1 = (MapItem*)malloc(sizeof(MapItem));
-    w1->type = PLANT;
+    w1->type = ROCK;
     w1->draw = draw_rock;
     w1->walkable = false;
     w1->data = NULL;
@@ -223,6 +223,16 @@ void add_potion(int x, int y, int* heal) {
     w1->draw = draw_potion;
     w1->walkable = true;
     w1->data = heal;
+    void* val = insertItem(get_active_map()->items, XY_KEY(x, y), w1);
+    if (val) free(val);  // If something is already there, free it
+}
+
+void add_footstep(int x, int y) {
+    MapItem* w1 = (MapItem*)malloc(sizeof(MapItem));
+    w1->type = FOOTSTEP;
+    w1->draw = draw_footstep;
+    w1->walkable = true;
+    w1->data = NULL;
     void* val = insertItem(get_active_map()->items, XY_KEY(x, y), w1);
     if (val) free(val);  // If something is already there, free it
 }

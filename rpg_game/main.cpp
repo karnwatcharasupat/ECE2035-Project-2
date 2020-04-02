@@ -30,12 +30,14 @@ void draw_possible_moves(int x, int y, int range);
 int attack_success(int);
 
 // Top down camera view
+#define MAX_ROUTE 100
 struct {
     int x, y;    // Current locations
     int px, py;  // Previous locations
     Character* selected;
     int cx, cy;  // Character location
     int charCount[NUM_PLAYERS];
+    int routes[MAX_ROUTE][2];
 } Camera;
 
 void sound_fx(const char* filename) {
@@ -409,6 +411,10 @@ void draw_possible_moves(int x, int y, int range_left) {
         return;
     }
 
+    if (abs(x - Camera.x) > 5 || (abs(y - Camera.y) > 4)) {
+        return;
+    }
+
     MapItem* item;
 
     item = get_here(x + 1, y);
@@ -455,6 +461,22 @@ void update_move_character(int x, int y) {
     if ((Camera.cx != x) || (Camera.cy != y)) {
         add_character(x, y, character);
         map_erase(Camera.cx, Camera.cy);
+    }
+
+    MapItem* item;
+    int rx, ry;
+    for (int i = 0; i < MAX_ROUTE; i++) {
+        rx = Camera.routes[i][0];
+        if (rx < 0) {
+            break;
+        }
+
+        ry = Camera.routes[i][1];
+        item = get_here(rx, ry);
+
+        if (item && item->type == FOOTSTEP) {
+            map_erase(rx, ry);
+        }
     }
 }
 
@@ -554,6 +576,22 @@ void update_char_cursor(int x, int y, int dir, int range) {
                     character->draw = draw_player2walk;
                 }
             }
+
+            int px = Camera.px;
+            int py = Camera.py;
+            MapItem* item = get_here(px, py);
+
+            if (!item) {
+                add_footstep(px, py);
+                for (int i = 0; i < MAX_ROUTE; i++) {
+                    if (Camera.routes[i][0] < 0) {
+                        Camera.routes[i][0] = px;
+                        Camera.routes[i][1] = py;
+                        Camera.routes[i + 1][0] = -1;
+                        break;
+                    }
+                }
+            }
         } else {
             pc.printf("out of range\n");
         }
@@ -622,6 +660,8 @@ void draw_game(int init, int mode) {
     // Draw status bars
     draw_upper_status();
     draw_lower_status();
+
+    graphic_alt = !graphic_alt;
 }
 
 /**
@@ -685,8 +725,9 @@ int main() {
     init_main_map();
     set_active_map(0);
 
-    Camera.x = Camera.px = 3;
-    Camera.y = Camera.px = 3;
+    Camera.x = Camera.px = 10;
+    Camera.y = Camera.px = 10;
+    Camera.routes[0][0] = -1;
 
     GameInputs inputs = read_inputs();
     int action = -1, update = -1;
@@ -731,13 +772,15 @@ int main() {
             characters[i][j].potion = 0;
 
             MapItem* item;
+            int x, y;
             do {
-                characters[i][j].x = map_width() * 0.1 * ((float)rand() / RAND_MAX - 0.5) + Camera.cx;
-                characters[i][j].y = map_height() * 0.1 * ((float)rand() / RAND_MAX - 0.5) + Camera.cx;
-                item = get_here(characters[i][j].x, characters[i][j].y);
-            } while (item || characters[i][j].x < 1 || characters[i][j].y < 1);
+                x = (map_width() * 0.1 * ((float)rand() / RAND_MAX - 0.5)) + Camera.x;
+                y = (map_height() * 0.1 * ((float)rand() / RAND_MAX - 0.5)) + Camera.y;
+                pc.printf("x: %d, y: %d", x, y);
+                item = get_here(x, y);
+            } while (item || x < 1 || y < 1 || x > map_width() - 1 && y > map_height() - 1);
 
-            add_character(characters[i][j].x, characters[i][j].y, &characters[i][j]);
+            add_character(x, y, &characters[i][j]);
         }
     }
 

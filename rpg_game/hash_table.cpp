@@ -415,4 +415,3 @@ void* removeItem(HashTable* hashTable, unsigned int key) {
 void deleteItem(HashTable* hashTable, unsigned int key) {
     removeItem(hashTable, key);
 }
-

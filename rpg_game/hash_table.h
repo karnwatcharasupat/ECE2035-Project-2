@@ -22,7 +22,7 @@
  * implementation details of the hash table module behind a clean public
  * interface.
  ***************************************************************************/
- /**
+/**
   * This defines a type that is a pointer to a function which takes
   * an unsigned int argument and returns an unsigned int value.
   * The name of the type is "HashFunction".
@@ -125,4 +125,3 @@ void* removeItem(HashTable* myHashTable, unsigned int key);
 void deleteItem(HashTable* myHashTable, unsigned int key);
 
 #endif
-
