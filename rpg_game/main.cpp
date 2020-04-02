@@ -24,7 +24,7 @@ int attack_routine(int x, int y, int en_x, int en_y, int player_id);
 int attack(Character* attacker, Character* defender);
 int is_game_over();
 void draw_game(int, int);
-void check_potion(int, int);
+void check_potion(int, int, Character*);
 void draw_possible_moves(int x, int y, int range);
 int attack_success(int);
 
@@ -142,13 +142,12 @@ int update_game(int action, int* mode, int* active_player) {
         case BACK_BUTTON:
             if (*mode == MODE_FREE_ROAM) {
                 end_turn(active_player, mode);
-                update = NO_RESULT;
                 pc.printf("character released\n");
             } else if (*mode == MODE_SELECTED) {
                 Camera.selected = NULL;
                 *mode = MODE_FREE_ROAM;
-                update = FULL_DRAW;
             }
+            update = FULL_DRAW;
             break;
         case GO_UP:
         case GO_LEFT:
@@ -259,6 +258,13 @@ int attack(Character* attacker, Character* defender) {
     } else {
         if (damage > 0) {
             defender->health -= damage;
+            if (defender->potion) {
+                if (defender->potion < (MAX_HEALTH - defender->health)) {
+                    defender->health += defender->potion;
+                    defender->potion = 0;
+                    speech("Potion activated!", "");
+                }
+            }
             pc.printf("Enemy health: %d\n", defender->health);
             speech("", "Hit!");
             if (defender->health <= 0) {
@@ -270,6 +276,13 @@ int attack(Character* attacker, Character* defender) {
         } else {
             attacker->health += damage;
             speech("", "Backfired!");
+            if (attacker->potion) {
+                if (attacker->potion < (MAX_HEALTH - attacker->health)) {
+                    attacker->health += attacker->potion;
+                    attacker->potion = 0;
+                    speech("Potion activated!", "");
+                }
+            }
             pc.printf("My health: %d\n", attacker->health);
             if (attacker->health <= 0) {
                 Camera.charCount[attacker->team - 1] -= 1;
@@ -290,6 +303,13 @@ int attack(Character* attacker, Character* defender) {
         if (damage > 0) {
             attacker->health -= damage;
             speech("", "Hit!");
+            if (attacker->potion) {
+                if (attacker->potion < (MAX_HEALTH - attacker->health)) {
+                    attacker->health += attacker->potion;
+                    attacker->potion = 0;
+                    speech("Potion activated!", "");
+                }
+            }
             pc.printf("My health: %d\n", attacker->health);
             if (attacker->health <= 0) {
                 Camera.charCount[attacker->team - 1] -= 1;
@@ -300,6 +320,13 @@ int attack(Character* attacker, Character* defender) {
         } else {
             defender->health += damage;
             speech("", "Backfired!");
+            if (defender->potion) {
+                if (defender->potion < (MAX_HEALTH - defender->health)) {
+                    defender->health += defender->potion;
+                    defender->potion = 0;
+                    speech("Potion activated!", "");
+                }
+            }
             pc.printf("Enemy health: %d\n", defender->health);
             if (defender->health <= 0) {
                 Camera.charCount[defender->team - 1] -= 1;
@@ -403,13 +430,13 @@ void check_potion(int x, int y, Character* character) {
             speech("You already have", "a potion!");
             map_erase(x, y);
 
-            int dx, dy;
-            while (item) {
+            int dx = 0, dy = 0;
+            while (item && (dx == 0) && (dy == 0)) {
                 dx = 10.0 * (((float)rand() / RAND_MAX) - 0.5);
                 dy = 10.0 * (((float)rand() / RAND_MAX) - 0.5);
                 item = get_here(x + dx, y + dx);
             }
-            add_potion(x + dx, y + dx, heal);
+            add_potion(x + dx, y + dx, &heal);
         }
     }
 }
@@ -556,10 +583,14 @@ void init_main_map() {
         for (int j = 0; j < map_height(); j++) {
             if ((i * map_height() + j) % 47 == 0) {
                 add_rock(i, j);
+                pc.printf("r");
             }
 
-            if ((i * map_height() + j) % 13 == 0) {
-                add_potion(i, j, 10);
+            if ((i * map_height() + j) % 79 == 0) {
+                int* heal = (int*)malloc(sizeof(int));
+                *heal = 10;
+                add_potion(i, j, heal);
+                pc.printf("p");
             }
         }
     }
@@ -567,8 +598,11 @@ void init_main_map() {
 
     pc.printf("Adding walls!\r\n");
     add_wall(0, 0, HORIZONTAL, map_width());
+    pc.printf("w1\n");
     add_wall(0, map_height() - 1, HORIZONTAL, map_width());
+    pc.printf("w2\n");
     add_wall(0, 0, VERTICAL, map_height());
+    pc.printf("w3\n");
     add_wall(map_width() - 1, 0, VERTICAL, map_height());
     pc.printf("Walls done!\r\n");
 
