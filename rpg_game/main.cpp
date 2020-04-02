@@ -661,7 +661,9 @@ void draw_game(int init, int mode) {
     draw_upper_status();
     draw_lower_status();
 
-    graphic_alt = !graphic_alt;
+    if (init) {
+        graphic_alt = !graphic_alt;
+    }
 }
 
 /**
