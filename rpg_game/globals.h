@@ -54,4 +54,6 @@ typedef struct {
 #define NUM_PLAYERS 2
 #define MAX_HEALTH 50
 
+extern int graphic_alt;
+
 #endif  //GLOBAL_H

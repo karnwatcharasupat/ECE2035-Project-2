@@ -9,6 +9,7 @@
 #include "graphics.h"
 #include "hardware.h"
 #include "map.h"
+#include "sound_fx.h"
 #include "speech.h"
 
 // Helper function declarations
@@ -37,6 +38,22 @@ struct {
     int charCount[NUM_PLAYERS];
 } Camera;
 
+void sound_fx(const char* filename) {
+    FILE* file;
+    pc.printf("%s opening\n", filename);
+    file = fopen(filename, "r");
+
+    if (!file) {
+        pc.printf("file not found!\n");
+        return;
+    }
+
+    pc.printf("playing\n");
+    waver.play(file);
+    fclose(file);
+    pc.printf("played\n");
+}
+
 /**
  * Given the game inputs, determine what kind of update needs to happen.
  * Possible return values are defined below.
@@ -50,13 +67,6 @@ struct {
 #define GO_DOWN 6
 
 int get_action(GameInputs inputs) {
-    /*
-    struct GameInputs {
-        int b1, b2, b3;     // Button presses
-        double ax, ay, az;  // Accelerometer readings
-    };
-    */
-
     if (inputs.b1) {
         pc.printf("ACTION\n");
         return ACTION_BUTTON;
@@ -65,7 +75,6 @@ int get_action(GameInputs inputs) {
         return BACK_BUTTON;
     } else {
         int action = get_action_from_accel(inputs);
-        //        pc.printf("ACC: %d\n", action);
         return action;
     }
 }
@@ -79,8 +88,6 @@ int get_action_from_accel(GameInputs inputs) {
     double y_abs = fabs(inputs.ay);
     int x_dir = (inputs.ax > 0);  // 1 for RIGHT, 0 for LEFT
     int y_dir = (inputs.ay > 0);  // 1 for UP, 0 for DOWN
-
-    //    pc.printf("ax: %g, ay: %g", inputs.ax, inputs.ay);
 
     if ((x_abs > ACCEL_THRESHOLD) || (y_abs > ACCEL_THRESHOLD)) {
         // if either value is greater than the threshold
@@ -231,6 +238,29 @@ int attack_routine(int x, int y, int en_x, int en_y, int player_id) {
     if (item->type == CHARACTERSPRITE) {
         Character* enemy = (Character*)(item->data);
         if (enemy->team != player_id) {
+            pc.printf("changing sprite to attack\n");
+            MapItem* currentCharItem = get_here(x, y);
+            if (player_id == 1) {
+                pc.printf("player 1");
+                currentCharItem->draw = draw_player1attack;
+                item->draw = draw_player2attack;
+            } else if (player_id == 2) {
+                pc.printf("player 2");
+                currentCharItem->draw = draw_player2attack;
+                item->draw = draw_player1attack;
+            }
+            pc.printf("changed sprite\n");
+            draw_game(true, MODE_FREE_ROAM);
+            pc.printf("redrawn\n");
+            if (player_id == 1) {
+                pc.printf("player 1");
+                currentCharItem->draw = draw_player1sprite;
+                item->draw = draw_player2sprite;
+            } else if (player_id == 2) {
+                pc.printf("player 2");
+                currentCharItem->draw = draw_player2sprite;
+                item->draw = draw_player1sprite;
+            }
             result = attack(currentChar, enemy);
         }
     }
@@ -247,6 +277,7 @@ int attack_routine(int x, int y, int en_x, int en_y, int player_id) {
 }
 
 int attack(Character* attacker, Character* defender) {
+    // sound_fx(SFX_ATTACK);
     speech("", "Attacking...");
 
     int hit_pc = (attacker->skill) - (defender->avoid);
@@ -262,6 +293,7 @@ int attack(Character* attacker, Character* defender) {
                 if (defender->potion < (MAX_HEALTH - defender->health)) {
                     defender->health += defender->potion;
                     defender->potion = 0;
+                    // sound_fx(SFX_HEAL);
                     speech("Potion activated!", "");
                 }
             }
@@ -270,6 +302,7 @@ int attack(Character* attacker, Character* defender) {
             if (defender->health <= 0) {
                 Camera.charCount[defender->team - 1] -= 1;
                 pc.printf("Enemy dead\n");
+                // sound_fx(SFX_DEATH);
                 speech("Enemy lost", "a player!");
                 return ENEMY_DEAD;
             }
@@ -280,6 +313,7 @@ int attack(Character* attacker, Character* defender) {
                 if (attacker->potion < (MAX_HEALTH - attacker->health)) {
                     attacker->health += attacker->potion;
                     attacker->potion = 0;
+                    // sound_fx(SFX_HEAL);
                     speech("Potion activated!", "");
                 }
             }
@@ -287,6 +321,7 @@ int attack(Character* attacker, Character* defender) {
             if (attacker->health <= 0) {
                 Camera.charCount[attacker->team - 1] -= 1;
                 pc.printf("Player dead\n");
+                // sound_fx(SFX_DEATH);
                 speech("You lost", "a player!");
                 return PLAYER_DEAD;
             }
@@ -307,6 +342,7 @@ int attack(Character* attacker, Character* defender) {
                 if (attacker->potion < (MAX_HEALTH - attacker->health)) {
                     attacker->health += attacker->potion;
                     attacker->potion = 0;
+                    // sound_fx(SFX_HEAL);
                     speech("Potion activated!", "");
                 }
             }
@@ -314,6 +350,7 @@ int attack(Character* attacker, Character* defender) {
             if (attacker->health <= 0) {
                 Camera.charCount[attacker->team - 1] -= 1;
                 pc.printf("Player dead\n");
+                // sound_fx(SFX_DEATH);
                 speech("You lost", "a player!");
                 return PLAYER_DEAD;
             }
@@ -324,12 +361,14 @@ int attack(Character* attacker, Character* defender) {
                 if (defender->potion < (MAX_HEALTH - defender->health)) {
                     defender->health += defender->potion;
                     defender->potion = 0;
+                    // sound_fx(SFX_HEAL);
                     speech("Potion activated!", "");
                 }
             }
             pc.printf("Enemy health: %d\n", defender->health);
             if (defender->health <= 0) {
                 Camera.charCount[defender->team - 1] -= 1;
+                // sound_fx(SFX_DEATH);
                 speech("Enemy lost", "a player!");
                 pc.printf("Enemy dead\n");
                 return ENEMY_DEAD;
@@ -500,6 +539,21 @@ void update_char_cursor(int x, int y, int dir, int range) {
         if (dist <= range) {
             Camera.x = x;
             Camera.y = y;
+
+            MapItem* character = get_here(cx, cy);
+            if (graphic_alt) {
+                if (Camera.selected->team == 1) {
+                    character->draw = draw_player1sprite;
+                } else if (Camera.selected->team == 2) {
+                    character->draw = draw_player2sprite;
+                }
+            } else {
+                if (Camera.selected->team == 1) {
+                    character->draw = draw_player1walk;
+                } else if (Camera.selected->team == 2) {
+                    character->draw = draw_player2walk;
+                }
+            }
         } else {
             pc.printf("out of range\n");
         }
@@ -535,10 +589,7 @@ void draw_game(int init, int mode) {
 
             // Figure out what to draw
             DrawFunc draw = NULL;
-            if (i == 0 && j == 0) {
-                // Decide what to draw at the 0 position
-                draw = draw_selection;
-            } else if (x >= 0 && y >= 0 && x < map_width() && y < map_height()) {  // Current (i,j) in the map
+            if (x >= 0 && y >= 0 && x < map_width() && y < map_height()) {  // Current (i,j) in the map
                 MapItem* curr_item = get_here(x, y);
                 MapItem* prev_item = get_here(px, py);
                 if (init || curr_item != prev_item) {  // Only draw if they're different
@@ -553,6 +604,12 @@ void draw_game(int init, int mode) {
             }
             // Actually draw the tile
             if (draw) draw(u, v);
+
+            if (i == 0 && j == 0) {
+                // Decide what to draw at the 0 position
+                draw = draw_selection;
+                draw(u, v);
+            }
         }
     }
 
@@ -586,8 +643,9 @@ void init_main_map() {
                 pc.printf("r");
             }
 
-            if ((i * map_height() + j) % 79 == 0) {
+            if ((i * map_height() + j) % 179 == 0) {
                 int* heal = (int*)malloc(sizeof(int));
+                // printf("%d\n", *(heal - 1));
                 *heal = 10;
                 add_potion(i, j, heal);
                 pc.printf("p");
@@ -625,37 +683,63 @@ int main() {
     // Initialize the maps
     maps_init();
     init_main_map();
+    set_active_map(0);
 
     Camera.x = Camera.px = 3;
     Camera.y = Camera.px = 3;
+
+    GameInputs inputs = read_inputs();
+    int action = -1, update = -1;
+    int mode = MODE_FREE_ROAM;
+    int active_player = 1, old_player = 0;
+
+    // Start page
+    int difficulty = 0;
+    draw_welcome(difficulty, true);
+    while (1) {
+        inputs = read_inputs();
+        if (inputs.b2) {
+            difficulty++;
+            difficulty = difficulty % 3;
+            draw_welcome(difficulty, false);
+            wait_ms(250);
+        }
+        if (inputs.b1) {
+            break;
+        }
+    }
 
     // Initialize Characters
     Character characters[NUM_PLAYERS][NUM_CHARACTERS];
     for (int i = 0; i < NUM_PLAYERS; i++) {
         Camera.charCount[i] = NUM_CHARACTERS;
         for (int j = 0; j < NUM_CHARACTERS; j++) {
-            characters[i][j].atk = 10 * (2 - i);
-            characters[i][j].def = 1;
+            characters[i][j].atk = 10;
+            characters[i][j].def = 5;
             characters[i][j].range = 3;
             characters[i][j].health = MAX_HEALTH;
             characters[i][j].team = i + 1;
-            characters[i][j].avoid = 50;
-            characters[i][j].skill = 149;
+            characters[i][j].avoid = 20;
+            characters[i][j].skill = 100;
+            if (i == 1) {
+                characters[i][j].atk += 5 * difficulty;
+                characters[i][j].def += 2 * difficulty;
+                characters[i][j].range += difficulty;
+                characters[i][j].avoid += 10 * difficulty;
+                characters[i][j].skill += 20 * difficulty;
+            }
             characters[i][j].potion = 0;
 
-            characters[i][j].x = 2 * i + 5;
-            characters[i][j].y = j + 5;
+            MapItem* item;
+            do {
+                characters[i][j].x = map_width() * 0.1 * ((float)rand() / RAND_MAX - 0.5) + Camera.cx;
+                characters[i][j].y = map_height() * 0.1 * ((float)rand() / RAND_MAX - 0.5) + Camera.cx;
+                item = get_here(characters[i][j].x, characters[i][j].y);
+            } while (item || characters[i][j].x < 1 || characters[i][j].y < 1);
 
             add_character(characters[i][j].x, characters[i][j].y, &characters[i][j]);
         }
     }
-
-    // Initialize game state
-    set_active_map(0);
-    GameInputs inputs = read_inputs();
-    int action = -1, update = -1;
-    int mode = MODE_FREE_ROAM;
-    int active_player = 1, old_player = 0;
 
     // Initial drawing
     draw_game(true, MODE_FREE_ROAM);

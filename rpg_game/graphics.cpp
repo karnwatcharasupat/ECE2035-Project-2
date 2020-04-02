@@ -5,6 +5,8 @@
 #include "globals.h"
 #include "sprite.h"
 
+int graphic_alt = 1;
+
 void draw_nothing(int u, int v) {
     uLCD.filled_rectangle(u, v, u + 11, v + 11, BLACK);
 }
@@ -38,12 +40,21 @@ void draw_img(int u, int v, const char* img) {
 }
 
 void draw_plant(int u, int v) {
-    draw_img(u, v, PLANT_IMG);
+    if (graphic_alt) {
+        draw_img(u, v, PLANT_IMG);
+    } else {
+        draw_img(u, v, PLANT_IMG2);
+    }
+
     // uLCD.filled_rectangle(u, v, u + 10, v + 10, GREEN);
 }
 
 void draw_rock(int u, int v) {
-    draw_img(u, v, ROCK_IMG);
+    if (graphic_alt) {
+        draw_img(u, v, ROCK_IMG);
+    } else {
+        draw_img(u, v, ROCK_IMG2);
+    }
     // uLCD.filled_rectangle(u, v, u + 10, v + 10, GREEN);
 }
 
@@ -63,6 +74,21 @@ void draw_player1sprite(int u, int v) {
     // uLCD.filled_circle(u + 5, v + 5, 5, RED);
     draw_img(u, v, PLAYER1_IMG);
 }
+
+void draw_player1attack(int u, int v) {
+    //    pc.printf("Drawing Player 1 Sprite\r\n");
+    // uLCD.filled_rectangle(u, v, u + 10, v + 10, RED);
+    // uLCD.filled_circle(u + 5, v + 5, 5, RED);
+    draw_img(u, v, PLAYER1_ATK);
+}
+
+void draw_player1walk(int u, int v) {
+    //    pc.printf("Drawing Player 1 Sprite\r\n");
+    // uLCD.filled_rectangle(u, v, u + 10, v + 10, RED);
+    // uLCD.filled_circle(u + 5, v + 5, 5, RED);
+    draw_img(u, v, PLAYER1_WALK);
+}
+
 void draw_player2sprite(int u, int v) {
     //    pc.printf("Drawing Player 2 Sprite\r\n");
     // uLCD.filled_rectangle(u, v, u + 10, v + 10, 0xa232a8);
@@ -70,8 +96,22 @@ void draw_player2sprite(int u, int v) {
     draw_img(u, v, PLAYER2_IMG);
 }
 
+void draw_player2attack(int u, int v) {
+    //    pc.printf("Drawing Player 1 Sprite\r\n");
+    // uLCD.filled_rectangle(u, v, u + 10, v + 10, RED);
+    // uLCD.filled_circle(u + 5, v + 5, 5, RED);
+    draw_img(u, v, PLAYER2_ATK);
+}
+
+void draw_player2walk(int u, int v) {
+    //    pc.printf("Drawing Player 1 Sprite\r\n");
+    // uLCD.filled_rectangle(u, v, u + 10, v + 10, RED);
+    // uLCD.filled_circle(u + 5, v + 5, 5, RED);
+    draw_img(u, v, PLAYER2_WALK);
+}
+
 void draw_selection(int u, int v) {
-    uLCD.filled_rectangle(u, v, u + 10, v + 10, LGREY);
+    uLCD.rectangle(u, v, u + 10, v + 10, LGREY);
 }
 
 #define MIN_X 2
@@ -113,4 +153,45 @@ void draw_game_over() {
     uLCD.cls();
     uLCD.locate(3, 5);
     uLCD.printf("GAME OVER");
+}
+
+void draw_welcome(int difficulty, int full) {
+    if (full) {
+        for (int u = 3; u < 123; u += 11) {
+            for (int v = 15; v < 113; v += 11) {
+                draw_wall(u, v);
+            }
+        }
+
+        uLCD.locate(4, 5);
+        uLCD.printf("Welcome to");
+        uLCD.locate(3, 6);
+        uLCD.printf("ECE 2035 RPG");
+        uLCD.locate(3, 8);
+        uLCD.printf("ACTION: start");
+
+        uLCD.locate(1, 9);
+        uLCD.printf("BACK: change lvl");
+
+        draw_player1attack(36, 102);
+
+        draw_plant(58, 102);
+
+        draw_player2attack(80, 102);
+    }
+
+    uLCD.locate(1, 11);
+    switch (difficulty) {
+        case 0:
+            uLCD.printf("Difficulty: EASY");
+            break;
+        case 1:
+            uLCD.printf("Difficulty: MED ");
+            break;
+        case 2:
+            uLCD.printf("Difficulty: HARD");
+            break;
+        default:
+            return;
+    }
 }

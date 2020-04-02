@@ -27,7 +27,11 @@ void draw_rock(int u, int v);
 void draw_potion(int u, int v);
 
 void draw_player1sprite(int u, int v);
+void draw_player1attack(int u, int v);
+void draw_player1walk(int u, int v);
 void draw_player2sprite(int u, int v);
+void draw_player2attack(int u, int v);
+void draw_player2walk(int u, int v);
 void draw_selection(int u, int v);
 void draw_range(int u, int v);
 void draw_game_over();
@@ -46,5 +50,7 @@ void draw_lower_status();
  * Draw the border for the map.
  */
 void draw_border();
+
+void draw_welcome(int, int);
 
 #endif  // GRAPHICS_H
