@@ -1,6 +1,9 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 
+typedef void (*DrawStatusFunc)(int health, int change, int mode);
+typedef void (*DrawFunc)(int u, int v);
+
 /**
  * Takes a string image and draws it to the screen. The string is 121 characters
  * long, and represents an 11x11 tile in row-major ordering (across, then down,
@@ -35,17 +38,17 @@ void draw_player2attack(int u, int v);
 void draw_player2walk(int u, int v);
 void draw_selection(int u, int v);
 void draw_range(int u, int v);
-void draw_game_over();
+void draw_game_over(int);
 
 /**
  * Draw the upper status bar.
  */
-void draw_upper_status();
+void draw_upper_status(int health, int change, int mode);
 
 /**
  * Draw the lower status bar.
  */
-void draw_lower_status();
+void draw_lower_status(int health, int change, int mode);
 
 /**
  * Draw the border for the map.
@@ -53,5 +56,10 @@ void draw_lower_status();
 void draw_border();
 
 void draw_welcome(int, int);
+
+#define STATUS_IDLE 0
+#define STATUS_ATTACKED 1
+#define STATUS_HEALED 2
+#define STATUS_INIT 3
 
 #endif  // GRAPHICS_H

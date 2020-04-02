@@ -7,6 +7,10 @@
 
 int graphic_alt = 1;
 
+int round(int x) {
+    return (int)((float)(x) + 0.5);
+}
+
 void draw_nothing(int u, int v) {
     uLCD.filled_rectangle(u, v, u + 11, v + 11, BLACK);
 }
@@ -110,17 +114,69 @@ void draw_range(int i, int j) {
     uLCD.rectangle(u, v, u2, v2, 0xFFFF00);
 }
 
-void draw_upper_status() {
+#define TOP_Y_MAX 8
+#define BTM_Y_MIN 119
+#define CHANGE_SPEED_MS 2
+
+void draw_status(int health, int change, int mode, int y0, int y1) {
+    float old_health = ((float)health - change) / (MAX_HEALTH * NUM_CHARACTERS);
+    float new_health = (float)health / (MAX_HEALTH * NUM_CHARACTERS);
+
+    int old_health_x = (int)round(old_health * 127.0);
+    int new_health_x = (int)round(new_health * 127.0);
+
+    pc.printf("old: %d, new: %d\n", old_health_x, new_health_x);
+
+    if (mode != STATUS_INIT) {
+        uLCD.filled_rectangle(old_health_x + 1, y0, 127, y1, BLACK);
+        uLCD.filled_rectangle(0, y0, old_health_x, y1, GREEN);
+    }
+
+    switch (mode) {
+        case STATUS_ATTACKED:
+            uLCD.filled_rectangle(new_health_x + 1, y0, old_health_x, y1, RED);
+            wait_ms(500);
+            for (int x = old_health_x; x > new_health_x; x--) {
+                uLCD.filled_rectangle(x, y0, x, y1, BLACK);
+                wait_ms(CHANGE_SPEED_MS);
+            }
+            break;
+        case STATUS_HEALED:
+            uLCD.filled_rectangle(old_health_x + 1, y0, new_health_x, y1, BLUE);
+            wait_ms(500);
+            for (int x = old_health_x; x <= new_health_x; x++) {
+                uLCD.filled_rectangle(x, y0, x, y1, GREEN);
+                wait_ms(CHANGE_SPEED_MS);
+            }
+            break;
+        case STATUS_INIT:
+            uLCD.filled_rectangle(old_health_x + 1, y0, 127, y1, BLACK);
+            for (int x = 0; x <= old_health_x; x++) {
+                uLCD.filled_rectangle(x + 1, y0, x + 5, y1, BLUE);
+                uLCD.filled_rectangle(x, y0, x, y1, GREEN);
+                wait_ms(CHANGE_SPEED_MS);
+            }
+            uLCD.filled_rectangle(0, y0, old_health_x, y1, GREEN);
+            break;
+        case STATUS_IDLE:
+        default:
+            return;
+    }
+}
+
+void draw_upper_status(int health, int change, int mode) {
     // Draw bottom border of status bar
     uLCD.line(0, 9, 127, 9, GREEN);
     // Add other status info drawing code here
+    draw_status(health, change, mode, 0, TOP_Y_MAX);
 }
 
-void draw_lower_status() {
+void draw_lower_status(int health, int change, int mode) {
     // Draw top border of status bar
     uLCD.line(0, 118, 127, 118, GREEN);
 
     // Add other status info drawing code here
+    draw_status(health, change, mode, BTM_Y_MIN, 127);
 }
 
 void draw_border() {
@@ -130,10 +186,50 @@ void draw_border() {
     uLCD.filled_rectangle(124, 14, 127, 117, WHITE);  // Right
 }
 
-void draw_game_over() {
-    uLCD.cls();
-    uLCD.locate(3, 5);
-    uLCD.printf("GAME OVER");
+void draw_game_over(int winner) {
+    if (winner == 0) {
+        return;
+    }
+
+    DrawFunc draw[3];
+
+    switch (winner) {
+        case 1:
+            draw[0] = draw_player1sprite;
+            draw[1] = draw_player1attack;
+            draw[2] = draw_player1walk;
+            break;
+        case 2:
+            draw[0] = draw_player2sprite;
+            draw[1] = draw_player2attack;
+            draw[2] = draw_player2walk;
+            break;
+        default:
+            return;
+    }
+
+    for (int u = 3; u < 120; u += 11) {
+        for (int v = 12; v < 115; v += 22) {
+            draw_wall(u, v);
+        }
+    }
+
+    int i;
+    int j = 0;
+    while (1) {
+        i = j % 3;
+        for (int u = 1; u < 116; u += 11) {
+            for (int v = 0; v < 115; v += 22) {
+                draw[i](u, v);
+                i++;
+                i = i % 3;
+            }
+            i++;
+            i = i % 3;
+        }
+        j++;
+        // wait_ms(500);
+    }
 }
 
 void draw_welcome(int difficulty, int full) {

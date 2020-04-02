@@ -38,6 +38,8 @@ struct {
     int cx, cy;  // Character location
     int charCount[NUM_PLAYERS];
     int routes[MAX_ROUTE][2];
+    int health[2];
+    int winner;
 } Camera;
 
 void sound_fx(const char* filename) {
@@ -67,6 +69,7 @@ void sound_fx(const char* filename) {
 #define GO_RIGHT 4
 #define GO_UP 5
 #define GO_DOWN 6
+#define INFO_BUTTON 7
 
 int get_action(GameInputs inputs) {
     if (inputs.b1) {
@@ -75,6 +78,9 @@ int get_action(GameInputs inputs) {
     } else if (inputs.b2) {
         pc.printf("BACK\n");
         return BACK_BUTTON;
+    } else if (inputs.b3) {
+        pc.printf("INFO\n");
+        return INFO_BUTTON;
     } else {
         int action = get_action_from_accel(inputs);
         return action;
@@ -158,6 +164,13 @@ int update_game(int action, int* mode, int* active_player) {
             }
             update = FULL_DRAW;
             break;
+        case INFO_BUTTON:
+            if (check_char_select(Camera.px, Camera.py, 0){
+                Character* character = Camera.selected;
+                Camera.selected = NULL;
+                draw_info(character);
+            }
+                break;
         case GO_UP:
         case GO_LEFT:
         case GO_DOWN:
@@ -184,28 +197,28 @@ int update_game(int action, int* mode, int* active_player) {
 int check_attack(int x, int y, int player_id) {
     int con = attack_routine(x, y, x, y + 1, player_id);
 
-    if (is_game_over()) {
+    if (Camera.winner = is_game_over()) {
         return GAME_OVER;
     }
 
     if (con) {
         con = attack_routine(x, y, x, y - 1, player_id);
 
-        if (is_game_over()) {
+        if (Camera.winner = is_game_over()) {
             return GAME_OVER;
         }
     }
 
     if (con) {
         con = attack_routine(x, y, x + 1, y, player_id);
-        if (is_game_over()) {
+        if (Camera.winner = is_game_over()) {
             return GAME_OVER;
         }
     }
 
     if (con) {
         con = attack_routine(x, y, x - 1, y, player_id);
-        if (is_game_over()) {
+        if (Camera.winner = is_game_over()) {
             return GAME_OVER;
         }
     }
@@ -282,6 +295,20 @@ int attack(Character* attacker, Character* defender) {
     // sound_fx(SFX_ATTACK);
     speech("", "Attacking...");
 
+    DrawStatusFunc draw_atk;
+    DrawStatusFunc draw_def;
+    if (attacker->team == 1) {
+        draw_atk = draw_upper_status;
+        draw_def = draw_lower_status;
+    } else if (attacker->team == 2) {
+        draw_atk = draw_lower_status;
+        draw_def = draw_upper_status;
+    } else {
+        return -1;
+    }
+
+    pc.printf("%p, %p\n", draw_atk, draw_def);
+
     int hit_pc = (attacker->skill) - (defender->avoid);
 
     int damage = (attacker->atk) - (defender->def);
@@ -291,16 +318,21 @@ int attack(Character* attacker, Character* defender) {
     } else {
         if (damage > 0) {
             defender->health -= damage;
+            Camera.health[defender->team - 1] -= damage;
+            draw_def(Camera.health[defender->team - 1], -damage, STATUS_ATTACKED);
+            pc.printf("Enemy health: %d\n", defender->health);
+            speech("", "Hit!");
             if (defender->potion) {
                 if (defender->potion < (MAX_HEALTH - defender->health)) {
                     defender->health += defender->potion;
+                    Camera.health[defender->team - 1] += defender->potion;
+                    draw_def(Camera.health[defender->team - 1], defender->potion, STATUS_HEALED);
                     defender->potion = 0;
                     // sound_fx(SFX_HEAL);
                     speech("Potion activated!", "");
                 }
             }
-            pc.printf("Enemy health: %d\n", defender->health);
-            speech("", "Hit!");
+
             if (defender->health <= 0) {
                 Camera.charCount[defender->team - 1] -= 1;
                 pc.printf("Enemy dead\n");
@@ -310,10 +342,14 @@ int attack(Character* attacker, Character* defender) {
             }
         } else {
             attacker->health += damage;
+            Camera.health[attacker->team - 1] += damage;
+            draw_atk(Camera.health[attacker->team - 1], damage, STATUS_ATTACKED);
             speech("", "Backfired!");
             if (attacker->potion) {
                 if (attacker->potion < (MAX_HEALTH - attacker->health)) {
                     attacker->health += attacker->potion;
+                    Camera.health[attacker->team - 1] += defender->potion;
+                    draw_atk(Camera.health[attacker->team - 1], defender->potion, STATUS_HEALED);
                     attacker->potion = 0;
                     // sound_fx(SFX_HEAL);
                     speech("Potion activated!", "");
@@ -339,10 +375,14 @@ int attack(Character* attacker, Character* defender) {
     } else {
         if (damage > 0) {
             attacker->health -= damage;
+            Camera.health[attacker->team - 1] -= damage;
+            draw_atk(Camera.health[attacker->team - 1], -damage, STATUS_ATTACKED);
             speech("", "Hit!");
             if (attacker->potion) {
                 if (attacker->potion < (MAX_HEALTH - attacker->health)) {
                     attacker->health += attacker->potion;
+                    Camera.health[attacker->team - 1] += defender->potion;
+                    draw_atk(Camera.health[attacker->team - 1], defender->potion, STATUS_HEALED);
                     attacker->potion = 0;
                     // sound_fx(SFX_HEAL);
                     speech("Potion activated!", "");
@@ -358,10 +398,14 @@ int attack(Character* attacker, Character* defender) {
             }
         } else {
             defender->health += damage;
+            Camera.health[defender->team - 1] += damage;
+            draw_def(Camera.health[defender->team - 1], damage, STATUS_ATTACKED);
             speech("", "Backfired!");
             if (defender->potion) {
                 if (defender->potion < (MAX_HEALTH - defender->health)) {
                     defender->health += defender->potion;
+                    Camera.health[defender->team - 1] += defender->potion;
+                    draw_def(Camera.health[defender->team - 1], defender->potion, STATUS_HEALED);
                     defender->potion = 0;
                     // sound_fx(SFX_HEAL);
                     speech("Potion activated!", "");
@@ -395,6 +439,12 @@ int check_char_select(int x, int y, int player_id) {
     MapItem* item = get_current(x, y);
     if (item->type == CHARACTERSPRITE) {
         Character* character = (Character*)(item->data);
+        if (player_id == 0) {
+            Camera.selected = character;
+            Camera.cx = x;
+            Camera.cy = y;
+            return true;
+        }
         if (character->team == player_id) {
             Camera.selected = character;
             Camera.cx = x;
@@ -657,13 +707,11 @@ void draw_game(int init, int mode) {
         draw_possible_moves(Camera.cx, Camera.cy, character->range);
     }
 
-    // Draw status bars
-    draw_upper_status();
-    draw_lower_status();
-
     if (init) {
         graphic_alt = !graphic_alt;
     }
+
+    draw_lower_status(Camera.health[1], 0, STATUS_IDLE);
 }
 
 /**
@@ -706,7 +754,7 @@ void init_main_map() {
     add_wall(map_width() - 1, 0, VERTICAL, map_height());
     pc.printf("Walls done!\r\n");
 
-    print_map();
+    // print_map();
 }
 
 /**
@@ -748,6 +796,7 @@ int main() {
             wait_ms(250);
         }
         if (inputs.b1) {
+            draw_game_over(1);
             break;
         }
     }
@@ -756,6 +805,7 @@ int main() {
     Character characters[NUM_PLAYERS][NUM_CHARACTERS];
     for (int i = 0; i < NUM_PLAYERS; i++) {
         Camera.charCount[i] = NUM_CHARACTERS;
+        Camera.health[i] = NUM_CHARACTERS * MAX_HEALTH;
         for (int j = 0; j < NUM_CHARACTERS; j++) {
             characters[i][j].atk = 10;
             characters[i][j].def = 5;
@@ -765,11 +815,11 @@ int main() {
             characters[i][j].avoid = 20;
             characters[i][j].skill = 100;
             if (i == 1) {
-                characters[i][j].atk += 5 * difficulty;
+                characters[i][j].atk += 20 * difficulty;
                 characters[i][j].def += 2 * difficulty;
                 characters[i][j].range += difficulty;
                 characters[i][j].avoid += 10 * difficulty;
-                characters[i][j].skill += 20 * difficulty;
+                characters[i][j].skill += 30 * difficulty;
             }
             characters[i][j].potion = 0;
 
@@ -787,6 +837,8 @@ int main() {
     }
 
     // Initial drawing
+    draw_upper_status(Camera.health[0], 0, STATUS_INIT);
+    draw_lower_status(Camera.health[1], 0, STATUS_INIT);
     draw_game(true, MODE_FREE_ROAM);
 
     // Main game loop
@@ -812,7 +864,7 @@ int main() {
         //        pc.printf("UPDATED\n");
         // 3b. Check for game over
         if (update == GAME_OVER) {
-            draw_game_over();
+            draw_game_over(Camera.winner);
             return 0;
         }
         // 4. Draw screen

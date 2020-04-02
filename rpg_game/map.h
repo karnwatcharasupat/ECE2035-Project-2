@@ -2,6 +2,7 @@
 #define MAP_H
 
 #include "globals.h"
+#include "graphics.h"
 #include "hash_table.h"
 
 /**
@@ -12,7 +13,6 @@ struct Map;
 // A function pointer type for drawing MapItems.
 // All tiles are 11x11 blocks.
 // u,v is the top left corner pixel of the block
-typedef void (*DrawFunc)(int u, int v);
 
 /**
  * The data for elements in the map. Each item in the map HashTable is a
