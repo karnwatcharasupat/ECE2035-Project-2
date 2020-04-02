@@ -2,7 +2,6 @@
 
 #include <algorithm>
 
-#include "globals.h"
 #include "sprite.h"
 
 int graphic_alt = 1;
@@ -184,6 +183,41 @@ void draw_border() {
     uLCD.filled_rectangle(0, 13, 2, 114, WHITE);      // Left
     uLCD.filled_rectangle(0, 114, 127, 117, WHITE);   // Bottom
     uLCD.filled_rectangle(124, 14, 127, 117, WHITE);  // Right
+}
+
+void draw_info(Character* character) {
+    int team = character->team;
+    int color;
+    DrawFunc sprite;
+    if (team == 1) {
+        color = RED;
+        sprite = draw_player1attack;
+    } else if (team == 2) {
+        color = BLUE;
+        sprite = draw_player2attack;
+    } else {
+        return;
+    }
+    uLCD.filled_rectangle(4, 16, 102, 92, BLACK);
+    uLCD.rectangle(3, 15, 103, 93, color);
+    sprite(5, 17);
+
+    if (character->potion) {
+        draw_potion(18, 17);
+    }
+
+    uLCD.locate(1, 4);
+    uLCD.printf("HEALTH: %d/%d", character->health, MAX_HEALTH);
+    uLCD.locate(1, 5);
+    uLCD.printf("ATK:    %d", character->atk);
+    uLCD.locate(1, 6);
+    uLCD.printf("DEF:    %d", character->def);
+    uLCD.locate(1, 7);
+    uLCD.printf("RANGE:  %d", character->range);
+    uLCD.locate(1, 8);
+    uLCD.printf("AVOID:  %d", character->avoid);
+    uLCD.locate(1, 9);
+    uLCD.printf("SKILL:  %d", character->skill);
 }
 
 void draw_game_over(int winner) {

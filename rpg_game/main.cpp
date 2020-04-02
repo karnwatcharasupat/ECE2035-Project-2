@@ -165,12 +165,18 @@ int update_game(int action, int* mode, int* active_player) {
             update = FULL_DRAW;
             break;
         case INFO_BUTTON:
-            if (check_char_select(Camera.px, Camera.py, 0){
+            if (check_char_select(Camera.px, Camera.py, 0)) {
                 Character* character = Camera.selected;
                 Camera.selected = NULL;
                 draw_info(character);
+
+                GameInputs inputs = read_inputs();
+                while (!inputs.b3) {
+                    inputs = read_inputs();
+                }
+                update = FULL_DRAW;
             }
-                break;
+            break;
         case GO_UP:
         case GO_LEFT:
         case GO_DOWN:
@@ -796,7 +802,7 @@ int main() {
             wait_ms(250);
         }
         if (inputs.b1) {
-            draw_game_over(1);
+            // draw_game_over(1);
             break;
         }
     }

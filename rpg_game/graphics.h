@@ -1,6 +1,7 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 
+#include "globals.h"
 typedef void (*DrawStatusFunc)(int health, int change, int mode);
 typedef void (*DrawFunc)(int u, int v);
 
@@ -56,6 +57,8 @@ void draw_lower_status(int health, int change, int mode);
 void draw_border();
 
 void draw_welcome(int, int);
+
+void draw_info(Character* character);
 
 #define STATUS_IDLE 0
 #define STATUS_ATTACKED 1

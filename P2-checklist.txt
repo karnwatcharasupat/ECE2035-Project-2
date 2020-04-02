@@ -43,9 +43,9 @@ _x_  Avoid
 
 _x_  Healing
 
-___  Character info menu
+_x_  Character info menu
 
-___  Character's inventory as part of the info menu
+_x_  Character's inventory as part of the info menu
 
 ___  Different terrain types
 
