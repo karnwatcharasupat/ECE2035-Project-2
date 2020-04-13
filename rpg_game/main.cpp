@@ -40,6 +40,9 @@ struct {
     int routes[MAX_ROUTE][2];
     int health[2];
     int winner;
+    int charMoved;
+    Character* charMovedPtr[NUM_CHARACTERS];
+    int* active_player;
 } Camera;
 
 void sound_fx(const char* filename) {
@@ -147,8 +150,13 @@ int update_game(int action, int* mode, int* active_player) {
                 update = check_attack(Camera.px, Camera.py, *active_player);
 
                 if (update != GAME_OVER) {
-                    end_turn(active_player, mode);
-                    draw_game(true, *mode);
+                    if (Camera.charMoved == NUM_CHARACTERS) {
+                        draw_game(true, *mode);
+                        end_turn(active_player, mode);
+                    } else {
+                        *mode = MODE_FREE_ROAM;
+                        draw_game(true, *mode);
+                    }
                 }
                 pc.printf("character moved\n");
             }
@@ -199,7 +207,7 @@ int update_game(int action, int* mode, int* active_player) {
 }
 
 #define END_ATTACK 0
-#define CONTINUE_ATTACK 1
+#define CONTINUE_ATTACK 3
 int check_attack(int x, int y, int player_id) {
     int con = attack_routine(x, y, x, y + 1, player_id);
 
@@ -259,30 +267,42 @@ int attack_routine(int x, int y, int en_x, int en_y, int player_id) {
     if (item->type == CHARACTERSPRITE) {
         Character* enemy = (Character*)(item->data);
         if (enemy->team != player_id) {
-            pc.printf("changing sprite to attack\n");
-            MapItem* currentCharItem = get_here(x, y);
-            if (player_id == 1) {
-                pc.printf("player 1");
-                currentCharItem->draw = draw_player1attack;
-                item->draw = draw_player2attack;
-            } else if (player_id == 2) {
-                pc.printf("player 2");
-                currentCharItem->draw = draw_player2attack;
-                item->draw = draw_player1attack;
+            draw_enemybox(en_x - Camera.x, en_y - Camera.y);
+            speech("Attack?", "Yes: Action");
+
+            while (result < 0) {
+                GameInputs inputs = read_inputs();
+                if (inputs.b1) {
+                    pc.printf("changing sprite to attack\n");
+                    MapItem* currentCharItem = get_here(x, y);
+                    if (player_id == 1) {
+                        pc.printf("player 1");
+                        currentCharItem->draw = draw_player1attack;
+                        item->draw = draw_player2attack;
+                    } else if (player_id == 2) {
+                        pc.printf("player 2");
+                        currentCharItem->draw = draw_player2attack;
+                        item->draw = draw_player1attack;
+                    }
+                    pc.printf("changed sprite\n");
+                    draw_game(true, MODE_FREE_ROAM);
+                    pc.printf("redrawn\n");
+                    if (player_id == 1) {
+                        pc.printf("player 1");
+                        currentCharItem->draw = draw_player1sprite;
+                        item->draw = draw_player2sprite;
+                    } else if (player_id == 2) {
+                        pc.printf("player 2");
+                        currentCharItem->draw = draw_player2sprite;
+                        item->draw = draw_player1sprite;
+                    }
+
+                    result = attack(currentChar, enemy);
+                } else if (inputs.b2) {
+                    speech("Thank you,", "Next");
+                    result = CONTINUE_ATTACK;
+                }
             }
-            pc.printf("changed sprite\n");
-            draw_game(true, MODE_FREE_ROAM);
-            pc.printf("redrawn\n");
-            if (player_id == 1) {
-                pc.printf("player 1");
-                currentCharItem->draw = draw_player1sprite;
-                item->draw = draw_player2sprite;
-            } else if (player_id == 2) {
-                pc.printf("player 2");
-                currentCharItem->draw = draw_player2sprite;
-                item->draw = draw_player1sprite;
-            }
-            result = attack(currentChar, enemy);
         }
     }
 
@@ -325,7 +345,7 @@ int attack(Character* attacker, Character* defender) {
         if (damage > 0) {
             defender->health -= damage;
             Camera.health[defender->team - 1] -= damage;
-            draw_def(Camera.health[defender->team - 1], -damage, STATUS_ATTACKED);
+            draw_def(Camera.health[defender->team - 1], max(-damage, -MAX_HEALTH), STATUS_ATTACKED);
             pc.printf("Enemy health: %d\n", defender->health);
             speech("", "Hit!");
             if (defender->potion) {
@@ -349,7 +369,7 @@ int attack(Character* attacker, Character* defender) {
         } else {
             attacker->health += damage;
             Camera.health[attacker->team - 1] += damage;
-            draw_atk(Camera.health[attacker->team - 1], damage, STATUS_ATTACKED);
+            draw_atk(Camera.health[attacker->team - 1], max(damage, -MAX_HEALTH), STATUS_ATTACKED);
             speech("", "Backfired!");
             if (attacker->potion) {
                 if (attacker->potion < (MAX_HEALTH - attacker->health)) {
@@ -382,7 +402,7 @@ int attack(Character* attacker, Character* defender) {
         if (damage > 0) {
             attacker->health -= damage;
             Camera.health[attacker->team - 1] -= damage;
-            draw_atk(Camera.health[attacker->team - 1], -damage, STATUS_ATTACKED);
+            draw_atk(Camera.health[attacker->team - 1], max(-damage, -MAX_HEALTH), STATUS_ATTACKED);
             speech("", "Hit!");
             if (attacker->potion) {
                 if (attacker->potion < (MAX_HEALTH - attacker->health)) {
@@ -405,7 +425,7 @@ int attack(Character* attacker, Character* defender) {
         } else {
             defender->health += damage;
             Camera.health[defender->team - 1] += damage;
-            draw_def(Camera.health[defender->team - 1], damage, STATUS_ATTACKED);
+            draw_def(Camera.health[defender->team - 1], max(damage, -MAX_HEALTH), STATUS_ATTACKED);
             speech("", "Backfired!");
             if (defender->potion) {
                 if (defender->potion < (MAX_HEALTH - defender->health)) {
@@ -451,14 +471,16 @@ int check_char_select(int x, int y, int player_id) {
             Camera.cy = y;
             return true;
         }
+
         if (character->team == player_id) {
-            Camera.selected = character;
-            Camera.cx = x;
-            Camera.cy = y;
-            return true;
+            if (character->moved == 0) {
+                Camera.selected = character;
+                Camera.cx = x;
+                Camera.cy = y;
+                return true;
+            }
         }
     }
-
     return false;
 }
 
@@ -501,11 +523,18 @@ void draw_possible_moves(int x, int y, int range_left) {
 void end_turn(int* active_player, int* mode) {
     pc.printf("end turn\n");
     Camera.selected = NULL;
+
+    for (int i = 0; i < Camera.charMoved; i++) {
+        Camera.charMovedPtr[i]->moved = 0;
+    }
+
+    Camera.charMoved = 0;
     *active_player = (*active_player) + 1;
     if (*active_player > NUM_PLAYERS) {
         *active_player = 1;
     }
     *mode = MODE_FREE_ROAM;
+
     speech("It's your turn!", "Let's go!");
 }
 
@@ -517,6 +546,9 @@ void update_move_character(int x, int y) {
     if ((Camera.cx != x) || (Camera.cy != y)) {
         add_character(x, y, character);
         map_erase(Camera.cx, Camera.cy);
+        Camera.charMovedPtr[Camera.charMoved] = character;
+        Camera.charMoved++;
+        character->moved = 1;
     }
 
     MapItem* item;
@@ -662,7 +694,7 @@ void update_char_cursor(int x, int y, int dir, int range) {
  */
 void draw_game(int init, int mode) {
     // Draw game border first
-    if (init) draw_border();
+    if (init) draw_border(Camera.active_player);
 
     // Iterate over all visible map tiles
     for (int i = -5; i <= 5; i++) {      // Iterate over columns of tiles
@@ -789,6 +821,7 @@ int main() {
     int action = -1, update = -1;
     int mode = MODE_FREE_ROAM;
     int active_player = 1, old_player = 0;
+    Camera.active_player = &active_player;
 
     // Start page
     int difficulty = 0;
@@ -820,6 +853,7 @@ int main() {
             characters[i][j].team = i + 1;
             characters[i][j].avoid = 20;
             characters[i][j].skill = 100;
+            characters[i][j].moved = 0;
             if (i == 1) {
                 characters[i][j].atk += 20 * difficulty;
                 characters[i][j].def += 2 * difficulty;
@@ -874,6 +908,7 @@ int main() {
             return 0;
         }
         // 4. Draw screen
+
         draw_game((update == FULL_DRAW), mode);
         //        pc.printf("DRAWN\n");
 

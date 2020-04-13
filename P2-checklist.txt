@@ -21,7 +21,7 @@ _x_  Players take turns
 
 _x_  Speech bubbles used to announce player turn change
 
-_x__  The map must be bigger than the screen (at least 100*50 tiles)
+_x__ The map must be bigger than the screen (at least 100*50 tiles)
 
 _x_  Art include at least one sprite
 
@@ -58,3 +58,7 @@ _x_  Animation for attacks or movement
 ___  Saving game state
 
 ___  Multiple distinct levels
+
+_x_  Complex sprites ("Sprites must be unique and more than just a stack of lines. I think that 8 unique sprites would be great for an advanced feature.")
+
+_x_  Choosing which enemy to attack if multiple enemies are valid at the character's position, or choosing not to attack at all.

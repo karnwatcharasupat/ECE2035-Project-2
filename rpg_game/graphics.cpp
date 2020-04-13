@@ -113,6 +113,13 @@ void draw_range(int i, int j) {
     uLCD.rectangle(u, v, u2, v2, 0xFFFF00);
 }
 
+void draw_enemybox(int u, int v) {
+    u = (u + 5) * 11 + 3;
+    v = (v + 4) * 11 + 15;
+
+    uLCD.rectangle(u, v, u + 10, v + 10, RED);
+}
+
 #define TOP_Y_MAX 8
 #define BTM_Y_MIN 119
 #define CHANGE_SPEED_MS 2
@@ -178,11 +185,12 @@ void draw_lower_status(int health, int change, int mode) {
     draw_status(health, change, mode, BTM_Y_MIN, 127);
 }
 
-void draw_border() {
-    uLCD.filled_rectangle(0, 9, 127, 14, WHITE);      // Top
-    uLCD.filled_rectangle(0, 13, 2, 114, WHITE);      // Left
-    uLCD.filled_rectangle(0, 114, 127, 117, WHITE);   // Bottom
-    uLCD.filled_rectangle(124, 14, 127, 117, WHITE);  // Right
+void draw_border(int* active_player) {
+    int color = (*active_player == 1) ? RED : BLUE;
+    uLCD.filled_rectangle(0, 9, 127, 14, color);      // Top
+    uLCD.filled_rectangle(0, 13, 2, 114, color);      // Left
+    uLCD.filled_rectangle(0, 114, 127, 117, color);   // Bottom
+    uLCD.filled_rectangle(124, 14, 127, 117, color);  // Right
 }
 
 void draw_info(Character* character) {
@@ -241,6 +249,8 @@ void draw_game_over(int winner) {
         default:
             return;
     }
+
+    uLCD.cls();
 
     for (int u = 3; u < 120; u += 11) {
         for (int v = 12; v < 115; v += 22) {

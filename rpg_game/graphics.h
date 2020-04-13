@@ -38,6 +38,7 @@ void draw_player2sprite(int u, int v);
 void draw_player2attack(int u, int v);
 void draw_player2walk(int u, int v);
 void draw_selection(int u, int v);
+void draw_enemybox(int u, int v);
 void draw_range(int u, int v);
 void draw_game_over(int);
 
@@ -54,7 +55,7 @@ void draw_lower_status(int health, int change, int mode);
 /**
  * Draw the border for the map.
  */
-void draw_border();
+void draw_border(int*);
 
 void draw_welcome(int, int);
 

@@ -48,6 +48,7 @@ typedef struct {
     int avoid;
     int skill;
     int potion;
+    int moved;
 } Character;
 
 #define NUM_CHARACTERS 3
