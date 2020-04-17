@@ -1,0 +1,64 @@
+		GTEmblem FEATURE CHECKLIST
+
+
+Student Name: KARN WATCHARASUPAT
+
+BASIC GAME FUNCTIONALITY
+
+_x_[done1]  Accelerometer moves the cursor (constrained by map boundaries but not obstacles)
+
+_x_[done1]  Characters have attack, defense, movement, hit points stats
+
+_x_[done1]  Characters can be selected for movement
+
+_x_[done1]  Characters can be moved within their movement range, once per turn
+
+_x_[done1]  Attacks work, including damage calculations
+
+_x_[done1]  Killed characters disappear from the map
+
+_x_[done1]   Players take turns
+
+_x_[done1]   Speech bubbles used to announce player turn change
+
+_x_[done1] The map must be bigger than the screen (at least 100*50 tiles)
+
+_x_[done1]  Art include at least one sprite
+
+_x_[done1]  Display Game Over when a player loses all characters
+
+
+
+EXTRA FEATURES (choose up to 10):
+
+_x_[done1]  Provide a visual representation of selected character's movement range
+
+___  An enemy AI that attacks only those characters that step into their attackable range
+
+___  An enemy AI that always moves towards the nearest enemy character to attack
+
+___  Weapons
+
+_x_[done1]  Avoid
+
+_x_[done1]  Healing
+
+_x_[done1]  Character info menu
+
+_x_[done1]  Character's inventory as part of the info menu
+
+___  Different terrain types
+
+_x_[done1]  Difficulty modes
+
+_x_[done1]  Starting page
+
+_x_[done1]  Animation for attacks or movement
+
+___  Saving game state
+
+___  Multiple distinct levels
+
+_x_[done1]  Complex sprites ("Sprites must be unique and more than just a stack of lines. I think that 8 unique sprites would be great for an advanced feature.")
+
+_x_[done1]   Choosing which enemy to attack if multiple enemies are valid at the character's position, or choosing not to attack at all.

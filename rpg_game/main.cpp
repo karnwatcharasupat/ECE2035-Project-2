@@ -150,7 +150,7 @@ int update_game(int action, int* mode, int* active_player) {
                 update = check_attack(Camera.px, Camera.py, *active_player);
 
                 if (update != GAME_OVER) {
-                    if (Camera.charMoved == NUM_CHARACTERS) {
+                    if (Camera.charMoved == Camera.charCount[*(Camera.active_player) - 1]) {
                         draw_game(true, *mode);
                         end_turn(active_player, mode);
                     } else {
@@ -267,6 +267,9 @@ int attack_routine(int x, int y, int en_x, int en_y, int player_id) {
     if (item->type == CHARACTERSPRITE) {
         Character* enemy = (Character*)(item->data);
         if (enemy->team != player_id) {
+            if (currentChar->moved == 0) {
+                currentChar->moved = 1;
+            }
             draw_enemybox(en_x - Camera.x, en_y - Camera.y);
             speech("Attack?", "Yes: Action");
 

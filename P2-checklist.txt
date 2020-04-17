@@ -7,9 +7,9 @@ BASIC GAME FUNCTIONALITY
 
 _x_  Accelerometer moves the cursor (constrained by map boundaries but not obstacles)
 
-_x__  Characters have attack, defense, movement, hit points stats
+_x_  Characters have attack, defense, movement, hit points stats
 
-_x__  Characters can be selected for movement
+_x_  Characters can be selected for movement
 
 _x_  Characters can be moved within their movement range, once per turn
 
@@ -62,3 +62,5 @@ ___  Multiple distinct levels
 _x_  Complex sprites ("Sprites must be unique and more than just a stack of lines. I think that 8 unique sprites would be great for an advanced feature.")
 
 _x_  Choosing which enemy to attack if multiple enemies are valid at the character's position, or choosing not to attack at all.
+
+_x_  The game automatically ends the player's turn when they have moved all eligible characters
